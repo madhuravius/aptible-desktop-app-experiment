@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/aptible/go-deploy/aptible"
+	"github.com/aptible/aptible-desktop-app/cli/internal"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -45,31 +45,14 @@ func main() {
 				Name: "apps",
 				Flags: []cli.Flag{
 					&cli.Int64Flag{
-						Name:     "environment",
-						Value:    0,
-						Required: true,
-						Usage:    "Specify an environment to run your apps:list command on",
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your apps:list command on",
 					},
 				},
 				Usage: "run the aptible CLI",
 				Action: func(cCtx *cli.Context) error {
-					token := cCtx.Value("token").(string)
-					apiHost := cCtx.Value("api-host").(string)
-
-					os.Setenv("APTIBLE_ACCESS_TOKEN", token)
-					os.Setenv("APTIBLE_API_ROOT_URL", apiHost)
-
-					client, err := aptible.SetUpClient()
-					if err != nil {
-						log.Fatal(err)
-					}
-					environmentId := cCtx.Value("environment").(int64)
-					environment, err := client.GetEnvironment(environmentId)
-					if err != nil {
-						log.Fatal(err)
-					}
-					fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
-
+					internal.ListApps(cCtx)
 					return nil
 				},
 			},

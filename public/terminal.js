@@ -1,16 +1,33 @@
 const go = new Go();
 let bin;
+let term;
 
 const terminalElement = document.getElementById("terminal")
 
+// hijack console.log for terminal.js specific things
+const consoleLog = console.log;
+console.log = (params) => {
+  let fromSelf = new Error().stack.split("\n")?.[1].includes("terminal.js")
+  if (fromSelf && term) {
+    params.split("\n").forEach((line) => term.write(`${line}\n\r`))
+  } else {
+    consoleLog(params);
+  }
+}
+
 const runAptibleCLI = async () => {
-    let oldLog = console.log;
-    let stdOut = [];
-    console.log = (line) => {stdOut.push(line);};
-    const { instance } = await WebAssembly.instantiate(bin, go.importObject); // reset instance
-    await go.run(instance);
-    console.log = oldLog;
-    return stdOut;
+    const obj = await WebAssembly.instantiate(bin, go.importObject); // reset instance
+    await go.run(obj.instance)
+    //
+    return new Promise(r => {
+      let timerId = setInterval(checkState, 25);
+      function checkState () {
+        if (go.exited == true) {
+          clearInterval(timerId);
+          r();
+        }
+      }
+    });
 }
 
 const createTerminal = () => {
@@ -26,14 +43,11 @@ const createTerminal = () => {
     return { fitAddon, term };
 }
 
-
 const runCommandInTerminal = async (command, term) => {
     const { token: { accessToken }, env: { apiUrl }} = window.reduxStore.getState();
     go.argv = ["", "--token", accessToken, "--api-host", apiUrl, ...command.split(" ")]
-    const lineGroups = await runAptibleCLI()
-    lineGroups.forEach((lineGroup) => lineGroup.split("\n").forEach((line) => term.write(`${line}\n\r`)))
+    return await runAptibleCLI()
 }
-
 
 const waitForReduxStore = async () => {
     while (true) {
@@ -51,14 +65,18 @@ const waitForReduxStore = async () => {
 }
 
 const startTerminal = async () => {
-    const { fitAddon, term } = createTerminal();
+    const { fitAddon, term: terminalToSet } = createTerminal();
+    term = terminalToSet;
 
     let currLine = "";
     const entries = [];
 
     const userPromptText = () => {
         const date = new Date();
-        return `\x1b[1;31m${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}\x1b[37m > aptible `
+        const hours = ('0'+date.getHours()).slice(-2);
+        const minutes = ('0'+date.getMinutes()).slice(-2)
+        const seconds = ('0'+date.getSeconds()).slice(-2)
+        return `\x1b[1;31m${hours}:${minutes}:${seconds}\x1b[37m > aptible `
     }
     const newLine = () => term.write("\r\n")
     const userPrompt = () => term.write(userPromptText())
@@ -160,6 +178,7 @@ const hideTerminal = () => {
 }
 toggleTerminalButton.addEventListener("click", () => {
     if (terminalElement.classList.contains("hidden")) {
+        appContainer.classList.remove("w-full")
         appContainer.classList.add("w-1/2");
         terminalElement.classList.remove("hidden")
         toggleTerminalButton.classList.remove("right-0")
