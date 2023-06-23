@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -41,15 +42,48 @@ func main() {
 				},
 			},
 			{
-				Name:  "run",
+				Name: "apps",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:     "environment",
+						Value:    0,
+						Required: true,
+						Usage:    "Specify an environment to run your apps:list command on",
+					},
+				},
 				Usage: "run the aptible CLI",
 				Action: func(cCtx *cli.Context) error {
-					log.Println("Starting the Aptible CLI")
+					token := cCtx.Value("token").(string)
+					apiHost := cCtx.Value("api-host").(string)
+
+					os.Setenv("APTIBLE_ACCESS_TOKEN", token)
+					os.Setenv("APTIBLE_API_ROOT_URL", apiHost)
+
+					client, err := aptible.SetUpClient()
+					if err != nil {
+						log.Fatal(err)
+					}
+					environmentId := cCtx.Value("environment").(int64)
+					environment, err := client.GetEnvironment(environmentId)
+					if err != nil {
+						log.Fatal(err)
+					}
+					fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
+
 					return nil
 				},
 			},
 		},
-		Flags: []cli.Flag{},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "token",
+				Usage: "Specify a api token to use when running requests",
+			},
+			&cli.StringFlag{
+				Name:  "api-host",
+				Usage: "Specify a api-host you want your commands to run against",
+			},
+		},
 	}
 
 	if err := app.Run(os.Args); err != nil {

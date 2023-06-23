@@ -8,15 +8,28 @@
     <title>Aptible</title>
     <style>
       #terminal {
-        position: absolute;
-        width: 100vw;
-        height: 40vh;
-        bottom: 0;
+        background-color: #000;
+      }
+      #terminal .terminal { 
+        padding: 1rem 0;
+      }
+      #show-hide-terminal.half-right {
+        right: 50%;
       }
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <button 
+      type="button" 
+      id="show-hide-terminal" 
+      class="text-sm fixed top-2 right-0 mr-8 border border-gray-500 rounded-lg px-2 bg-gray-100">
+      <span class="leading-8">‹ Terminal</span>
+      <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+    </button>
+    <div class="flex" id="electron-app-container">
+      <div class="flex" id="app"></div>
+    </div>
+    <div class="fixed right-0 top-0 px-5 w-1/2 h-screen hidden" id="terminal"></div>
     <script src="/xterm.min.js"></script>
     <script src="/xterm-addon-fit.min.js"></script>
     <script src="/wasm_exec.js"></script>

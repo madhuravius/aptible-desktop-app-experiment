@@ -2,6 +2,7 @@ import { BrowserWindow, Menu, Tray, app } from "electron";
 import path from "path";
 
 let isQuitting = false;
+// const trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../", "favicon.ico") : "dist/favicon.ico"
 const iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../", "logo.png") : "dist/logo.png"
 
 app.on('before-quit', function () {
@@ -22,6 +23,7 @@ app.whenReady().then(() => {
   const mainWindow = new BrowserWindow({
     title: "Main window",
     webPreferences: {
+      nodeIntegration: true,
       // https://www.electronjs.org/docs/latest/tutorial/security#6-do-not-disable-websecurity
       // TODO - need to return to this and enable later when possible
       webSecurity: false,
