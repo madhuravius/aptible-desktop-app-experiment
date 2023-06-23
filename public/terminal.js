@@ -34,7 +34,23 @@ const runCommandInTerminal = async (command, term) => {
     lineGroups.forEach((lineGroup) => lineGroup.split("\n").forEach((line) => term.write(`${line}\n\r`)))
 }
 
-const startTerminal = () => {
+
+const waitForReduxStore = async () => {
+    while (true) {
+        if (window.reduxStore?.getState) {
+            const { token: { accessToken }} = window.reduxStore.getState();
+            if (accessToken) {
+                showTerminalButton();
+                break;
+            }
+        }
+        
+        console.log("No store found, waiting...")
+        await new Promise(r => setTimeout(r, 3000));
+    }
+}
+
+const startTerminal = async () => {
     const { fitAddon, term } = createTerminal();
 
     let currLine = "";
@@ -53,6 +69,8 @@ const startTerminal = () => {
 
     term.write('Aptible CLI started! \n')
     newLine();
+    await waitForReduxStore();
+
     setTimeout(async () => {
         await runCommandInTerminal("about", term);
         newLine();
@@ -111,10 +129,25 @@ console.log("Loading WASM binary for use")
 fetch('/cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
     bin = binData;
     console.log("Loaded WASM bin, starting terminal")
-    startTerminal();
 }).catch((err) => {
     console.error(err);
+}).finally(() => {
+    startTerminal();
 });
+
+const showTerminalButton = () => {
+    toggleTerminalButton.classList.remove("hidden");
+}
+const hideTerminalButton = () => {
+    toggleTerminalButton.classList.add("hidden");
+}
+
+setInterval(async () => {
+    if (window.reduxStore?.getState) {
+        const { token: { accessToken }} = window.reduxStore.getState();
+        if (!accessToken) hideTerminalButton();
+    }
+}, 1000)
 
 
 const appContainer = document.getElementById("electron-app-container");

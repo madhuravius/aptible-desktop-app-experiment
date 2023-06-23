@@ -10,7 +10,7 @@ export default defineConfig(() => {
       electron([
         {
           entry: "electron/main.ts",
-        }
+        },
       ]),
       react(),
       tsconfigPaths(),
