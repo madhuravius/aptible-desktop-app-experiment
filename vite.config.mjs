@@ -7,9 +7,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig(() => {
   return {
     plugins: [
-      electron({
-        entry: "electron/main.ts",
-      }),
+      electron([
+        {
+          entry: "electron/main.ts",
+        }
+      ]),
       react(),
       tsconfigPaths(),
     ],

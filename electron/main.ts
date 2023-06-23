@@ -1,9 +1,19 @@
-import { BrowserWindow, app } from "electron";
+import { BrowserWindow, Menu, Tray, app } from "electron";
+import path from "path";
+
+let isQuitting = false;
+const iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../", "logo.png") : "dist/logo.png"
+
+app.on('before-quit', function () {
+  isQuitting = true;
+});
 
 app.whenReady().then(() => {
+  const tray = new Tray(iconPath)
   const splash = new BrowserWindow({
     width: 330,
     height: 80,
+    icon: iconPath,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
@@ -17,6 +27,8 @@ app.whenReady().then(() => {
       webSecurity: false,
     },
     show: false,
+    width: 1024,
+    height: 768,
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -37,5 +49,36 @@ app.whenReady().then(() => {
       // Load your file
       mainWindow.loadFile("dist/index.html");
     }
+  
+
+    // BEGIN TRAY-RELATED
+    // add desktop app-specific code (ex: terminal)
+    mainWindow.on('minimize',function(event){
+      event.preventDefault();
+      mainWindow.hide();
+    });
+    
+    mainWindow.on('close', function (event) {
+      if(!isQuitting){
+          event.preventDefault();
+          mainWindow.hide();
+      }
+      return false;
+    });
+
+    tray.setContextMenu(Menu.buildFromTemplate([
+      {
+        label: 'Show Aptible', click: function () {
+          mainWindow.show();
+        }
+      },
+      {
+        label: 'Quit', click: function () {
+          isQuitting = true;
+          app.quit();
+        }
+      }
+    ]));
+    // END TRAY-RELATED
   }, 1000);
 });
