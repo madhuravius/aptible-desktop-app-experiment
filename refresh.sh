@@ -31,7 +31,13 @@ yarn add -D electron-builder electron
 
 # electron does not support browser router, so we'll need to switch to memory router for that
 # sed on mac does not allow overwriting in place easily, so just copy it to tmp and overwrite
-sed 's/createBrowserRouter/createMemoryRouter/g' ./src/app/router.tsx > ./src/app/router-tmp.tsx
+sed -i '' -e 's/createBrowserRouter/createMemoryRouter/g' ./src/app/router.tsx
+
+# relative image paths to root are not allowed in electron either, so this has to be fixed
+for pathToEdit in database-types language-types resource-types; do
+    find ./src -type f -exec sed -i '' -e "s|/$pathToEdit|$pathToEdit|g" {} +
+done
+
 mv ./src/app/router-tmp.tsx ./src/app/router.tsx
 
 echo "Setting up package.json properly for use"

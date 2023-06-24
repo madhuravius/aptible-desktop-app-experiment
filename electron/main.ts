@@ -14,7 +14,7 @@ app.on("before-quit", function () {
 });
 
 app.whenReady().then(() => {
-  iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "icon.png") : path.join(__dirname, "../icon.png");
+  iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/icon.png") : path.join(__dirname, "../icon.png");
   trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
   tray = new Tray(nativeImage.createFromPath(trayIconPath));
 

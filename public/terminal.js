@@ -173,7 +173,7 @@ const startTerminal = async () => {
 }
 
 console.log("Loading WASM binary for use")
-fetch('/cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
+fetch('cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
     bin = binData;
     console.log("Loaded WASM bin, starting terminal")
 }).catch((err) => {
@@ -209,7 +209,7 @@ const hideTerminal = () => {
       ‹ Terminal <br />
       <span class="text-xs">Ctrl + Shift + T</span>
     </span>
-    <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+    <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
   </div>`;
 }
 const showTerminal = () => {
@@ -223,7 +223,7 @@ const showTerminal = () => {
           › Terminal <br />
           <span class="text-xs">Ctrl + Shift + T</span>
         </span>
-        <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+        <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
       </div>`;
         setTimeout(() => {
           fitAddon.fit();
