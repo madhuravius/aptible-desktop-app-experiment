@@ -68,6 +68,29 @@ func main() {
 				},
 			},
 			{
+				Name: "backup:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your backup:list command on",
+					},
+					&cli.Int64Flag{
+						Name:  "database",
+						Value: 0,
+						Usage: "Specify an database to run your backup:list command on",
+					},
+				},
+				Usage: "This command lists all Database Backups for a given Database.",
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					if err := c.ListBackups(ctx); err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+			{
 				Name: "db:list",
 				Flags: []cli.Flag{
 					&cli.Int64Flag{

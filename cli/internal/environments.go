@@ -12,7 +12,7 @@ func (c *Config) ListEnvironments(ctx *cli.Context) error {
 	var err error
 
 	environmentId := ctx.Value("environment").(int64)
-	if environmentId > 0 {
+	if environmentId != 0 {
 		environment, err := c.client.GetEnvironment(environmentId)
 		if err != nil {
 			return err
