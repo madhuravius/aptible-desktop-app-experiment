@@ -104,7 +104,6 @@ const startTerminal = async () => {
     // todo - https://github.com/EDDYMENS/interactive-terminal/blob/main/frontend.js#L21
     // main loop
     term.onKey(async (char, ev) => {
-        consoleLog(char)
         const { key } = char;
         if (["\u0038","\u0040"].includes(key)) {
             // ignore up/down arrows
@@ -205,21 +204,46 @@ const hideTerminal = () => {
     terminalElement.classList.add("hidden")
     toggleTerminalButton.classList.remove("half-right")
     toggleTerminalButton.classList.add("right-0")
-    toggleTerminalButton.innerHTML = '<span class="leading-8">‹ Terminal</span><img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />';
+    toggleTerminalButton.innerHTML = `        <div class="flex">
+    <span class="leading-4">
+      ‹ Terminal <br />
+      <span class="text-xs">Ctrl + Shift + T</span>
+    </span>
+    <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+  </div>`;
 }
-toggleTerminalButton.addEventListener("click", () => {
-    if (terminalElement.classList.contains("hidden")) {
-        appContainer.classList.remove("w-full")
+const showTerminal = () => {
+  appContainer.classList.remove("w-full")
         appContainer.classList.add("w-1/2");
         terminalElement.classList.remove("hidden")
         toggleTerminalButton.classList.remove("right-0")
         toggleTerminalButton.classList.add("half-right")
-        toggleTerminalButton.innerHTML = '<span class="leading-8">› Terminal</span><img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />';
+        toggleTerminalButton.innerHTML = `<div class="flex">
+        <span class="leading-4">
+          › Terminal <br />
+          <span class="text-xs">Ctrl + Shift + T</span>
+        </span>
+        <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+      </div>`;
         setTimeout(() => {
           fitAddon.fit();
           term.focus();
         }, 100);
+}
+toggleTerminalButton.addEventListener("click", () => {
+  if (terminalElement.classList.contains("hidden")) {
+    showTerminal(); 
+  } else {
+      hideTerminal();
+  }
+})
+
+document.addEventListener('keydown', (event) => {
+  if (event.ctrlKey && event.shiftKey && event.key === "T") {
+    if (terminalElement.classList.contains("hidden")) {
+      showTerminal(); 
     } else {
         hideTerminal();
     }
-})
+  }
+});

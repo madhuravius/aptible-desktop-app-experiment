@@ -23,8 +23,13 @@
       type="button" 
       id="show-hide-terminal" 
       class="text-sm fixed top-2 right-0 mr-8 border border-gray-500 rounded-lg px-2 bg-gray-100 hidden">
-      <span class="leading-8">‹ Terminal</span>
-      <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+      <div class="flex">
+        <span class="leading-4">
+          ‹ Terminal <br />
+          <span class="text-xs">Ctrl + Shift + T</span>
+        </span>
+        <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+      </div>
     </button>
     <div class="flex" id="electron-app-container">
       <div class="flex" id="app"></div>
