@@ -1,6 +1,7 @@
 const go = new Go();
 let bin;
 let term;
+let fitAddon;
 
 const terminalElement = document.getElementById("terminal")
 
@@ -18,8 +19,10 @@ console.log = (params) => {
 const runAptibleCLI = async () => {
     const obj = await WebAssembly.instantiate(bin, go.importObject); // reset instance
     await go.run(obj.instance)
-    //
     return new Promise(r => {
+      // this must be done because go spawns work that immediately returns a promise in wasm
+      // if any async background workers are present (web), we must wait until they are ALL
+      // complete. this is not documented very well and is probably subject to change
       let timerId = setInterval(checkState, 25);
       function checkState () {
         if (go.exited == true) {
@@ -37,7 +40,7 @@ const createTerminal = () => {
         fontSize: 12
     });
 
-    const fitAddon = new FitAddon.FitAddon();
+    fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
 
     return { fitAddon, term };
@@ -65,8 +68,9 @@ const waitForReduxStore = async () => {
 }
 
 const startTerminal = async () => {
-    const { fitAddon, term: terminalToSet } = createTerminal();
+    const { fitAddon: fitAddonToSet, term: terminalToSet } = createTerminal();
     term = terminalToSet;
+    fitAddon = fitAddonToSet;
 
     let currLine = "";
     const entries = [];
@@ -83,7 +87,6 @@ const startTerminal = async () => {
 
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
-    window.addEventListener("ready", () => fitAddon.fit());
 
     term.write('Aptible CLI started! \n')
     newLine();
@@ -125,7 +128,6 @@ const startTerminal = async () => {
             newLine();
             entries.push(currLine.trim());
             await runCommandInTerminal(currLine.trim(), term)
-            newLine();
             userPrompt();
             currLine = "";
         } else if (key === '\u007F') {
@@ -175,6 +177,7 @@ const hideTerminal = () => {
     terminalElement.classList.add("hidden")
     toggleTerminalButton.classList.remove("half-right")
     toggleTerminalButton.classList.add("right-0")
+    toggleTerminalButton.innerHTML = '<span class="leading-8">‹ Terminal</span><img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />';
 }
 toggleTerminalButton.addEventListener("click", () => {
     if (terminalElement.classList.contains("hidden")) {
@@ -183,6 +186,11 @@ toggleTerminalButton.addEventListener("click", () => {
         terminalElement.classList.remove("hidden")
         toggleTerminalButton.classList.remove("right-0")
         toggleTerminalButton.classList.add("half-right")
+        toggleTerminalButton.innerHTML = '<span class="leading-8">› Terminal</span><img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />';
+        setTimeout(() => {
+          fitAddon.fit();
+          term.focus();
+        }, 100);
     } else {
         hideTerminal();
     }

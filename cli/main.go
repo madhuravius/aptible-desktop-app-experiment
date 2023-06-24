@@ -50,9 +50,64 @@ func main() {
 						Usage: "Specify an environment to run your apps:list command on",
 					},
 				},
-				Usage: "run the aptible CLI",
+				Usage: "This command lists Apps in an Environment.",
 				Action: func(cCtx *cli.Context) error {
 					internal.ListApps(cCtx)
+					return nil
+				},
+			},
+			{
+				Name: "db:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your db:list command on",
+					},
+				},
+				Usage: "This command lists Databases in an Environment.",
+				Action: func(cCtx *cli.Context) error {
+					internal.ListDatabases(cCtx)
+					return nil
+				},
+			},
+			{
+				Name: "environment:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your environment:list command on",
+					},
+				},
+				Usage: "This command lists all Environments.",
+				Action: func(cCtx *cli.Context) error {
+					internal.ListEnvironments(cCtx)
+					return nil
+				},
+			},
+			{
+				Name: "logs",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your logs command on",
+					},
+					&cli.Int64Flag{
+						Name:  "app",
+						Value: 0,
+						Usage: "Specify an app to run your logs command on",
+					},
+					&cli.Int64Flag{
+						Name:  "database",
+						Value: 0,
+						Usage: "Specify an database to run your logs command on",
+					},
+				},
+				Usage: "This command lets you access real-time logs for an App or Database.",
+				Action: func(cCtx *cli.Context) error {
+					internal.Logs(cCtx)
 					return nil
 				},
 			},

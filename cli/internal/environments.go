@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func ListApps(cCtx *cli.Context) {
+func ListEnvironments(cCtx *cli.Context) {
 	var err error
 	client, err := Client(cCtx)
 	if err != nil {
@@ -32,17 +32,6 @@ func ListApps(cCtx *cli.Context) {
 	}
 
 	for _, env := range envs {
-		apps, err := client.GetApps(env.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if len(apps) == 0 {
-			continue
-		}
-
-		fmt.Printf("=== %s\n", env.Handle)
-		for _, app := range apps {
-			fmt.Println(app.Handle)
-		}
+		fmt.Println(env.Handle)
 	}
 }
