@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <link href="/xterm.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="favicon.ico" />
+    <link href="xterm.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aptible</title>
     <style>
@@ -23,24 +23,29 @@
       type="button" 
       id="show-hide-terminal" 
       class="text-sm fixed top-2 right-0 mr-8 border border-gray-500 rounded-lg px-2 bg-gray-100 hidden">
-      <span class="leading-8">‹ Terminal</span>
-      <img class="inline-block ml-2 h-8" src="/resource-types/logo-service.png" />
+      <div class="flex">
+        <span class="leading-4">
+          ‹ Terminal <br />
+          <span class="text-xs">Ctrl + Shift + T</span>
+        </span>
+        <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
+      </div>
     </button>
     <div class="flex" id="electron-app-container">
       <div class="flex" id="app"></div>
     </div>
     <div class="fixed right-0 top-0 px-5 w-1/2 h-screen hidden" id="terminal"></div>
-    <script src="/xterm.min.js"></script>
-    <script src="/xterm-addon-fit.min.js"></script>
-    <script src="/wasm_exec.js"></script>
-    <script src="/terminal.js"></script>
-    <script type="module" src="/src/app/init.ts"></script>
+    <script src="xterm.min.js"></script>
+    <script src="xterm-addon-fit.min.js"></script>
+    <script src="wasm_exec.js"></script>
+    <script src="terminal.js"></script>
+    <script type="module" src="src/app/init.ts"></script>
     <script id="tuna">
       (function(a,p,t,i,b,l,e) {
       a.aptible=a.aptible||{_q:[]};f='event,identify'.split(',');
       l=function(n){return function(){a.aptible._q.push([n,Array.prototype.slice.call(arguments)])}};
       for(e=0;e<f.length;e++){a.aptible[f[e]]=l(f[e])};
-      i=p.createElement(t);i.type='text/javascript';i.async=1;i.src="/aptible.js";
+      i=p.createElement(t);i.type='text/javascript';i.async=1;i.src="aptible.js";
       b=p.getElementsByTagName(t)[0];b.parentNode.insertBefore(i,b);
       })(window, document, 'script');
     </script>

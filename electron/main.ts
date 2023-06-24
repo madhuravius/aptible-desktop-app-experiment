@@ -1,18 +1,23 @@
-import { BrowserWindow, Menu, Tray, app } from "electron";
+import { BrowserWindow, Menu, Tray, app, nativeImage, protocol } from "electron";
 import path from "path";
 
+// global garb to prevent gcing and losing
+let tray; // must be specified globally or will be gc
+let trayIconPath;
+let iconPath;
+// end of global garb
+
 let isQuitting = false;
-// const trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../", "favicon.ico") : "dist/favicon.ico"
-const iconPath = process.env.VITE_DEV_SERVER_URL
-  ? path.join(__dirname, "../", "logo.png")
-  : "dist/logo.png";
 
 app.on("before-quit", function () {
   isQuitting = true;
 });
 
 app.whenReady().then(() => {
-  const tray = new Tray(iconPath);
+  iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/icon.png") : path.join(__dirname, "../icon.png");
+  trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
+  tray = new Tray(nativeImage.createFromPath(trayIconPath));
+
   const splash = new BrowserWindow({
     width: 330,
     height: 80,
@@ -39,19 +44,18 @@ app.whenReady().then(() => {
     splash.loadFile("splash.html");
   } else {
     // Load your file
-    splash.loadFile("dist/splash.html");
+    splash.loadFile("splash.html");
   }
 
   setTimeout(() => {
     splash.destroy();
     mainWindow.show();
 
-    // You can use `process.env.VITE_DEV_SERVER_URL` when the vite command is called `serve`
     if (process.env.VITE_DEV_SERVER_URL) {
       mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     } else {
       // Load your file
-      mainWindow.loadFile("dist/index.html");
+      mainWindow.loadFile("index.html");
     }
 
     // BEGIN TRAY-RELATED

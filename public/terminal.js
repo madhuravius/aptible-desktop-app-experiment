@@ -1,6 +1,7 @@
 const go = new Go();
 let bin;
 let term;
+let fitAddon;
 
 const terminalElement = document.getElementById("terminal")
 
@@ -18,8 +19,10 @@ console.log = (params) => {
 const runAptibleCLI = async () => {
     const obj = await WebAssembly.instantiate(bin, go.importObject); // reset instance
     await go.run(obj.instance)
-    //
     return new Promise(r => {
+      // this must be done because go spawns work that immediately returns a promise in wasm
+      // if any async background workers are present (web), we must wait until they are ALL
+      // complete. this is not documented very well and is probably subject to change
       let timerId = setInterval(checkState, 25);
       function checkState () {
         if (go.exited == true) {
@@ -37,7 +40,7 @@ const createTerminal = () => {
         fontSize: 12
     });
 
-    const fitAddon = new FitAddon.FitAddon();
+    fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
 
     return { fitAddon, term };
@@ -65,10 +68,12 @@ const waitForReduxStore = async () => {
 }
 
 const startTerminal = async () => {
-    const { fitAddon, term: terminalToSet } = createTerminal();
+    const { fitAddon: fitAddonToSet, term: terminalToSet } = createTerminal();
     term = terminalToSet;
+    fitAddon = fitAddonToSet;
 
     let currLine = "";
+    let lastPositionInHistory = 0;
     const entries = [];
 
     const userPromptText = () => {
@@ -83,7 +88,6 @@ const startTerminal = async () => {
 
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
-    window.addEventListener("ready", () => fitAddon.fit());
 
     term.write('Aptible CLI started! \n')
     newLine();
@@ -114,20 +118,45 @@ const startTerminal = async () => {
             userPrompt();
             currLine = "";
             hideTerminal();
-        }
-        else if (key === "\u0003") { // ctrl + c
+        } else if (key === "\x1B[A") { // up arrow
+          currLine = "";
+          if (entries.length > 0) {
+            if (lastPositionInHistory === entries.length) {
+              currLine = entries.at(-1);
+              lastPositionInHistory --;
+            } else if (lastPositionInHistory >= 0) {
+              currLine = entries.at(lastPositionInHistory)
+              lastPositionInHistory --;
+            }
+            term.write('\x1b[2K\r'); // clear CURRENT line
+            userPrompt();
+            term.write(currLine);
+          }
+        } else if (key === "\x1B[B") { // down arrow
+          if (lastPositionInHistory < entries.length - 1) {
+            currLine = entries.at(lastPositionInHistory)
+            lastPositionInHistory ++;
+            term.write('\x1b[2K\r'); // clear CURRENT line
+            userPrompt();
+            term.write(currLine);
+          }
+        } else if (key === "\f") { // ctrl + l / clear
+            term.clear();
+            newLine();
+            userPrompt();
+            currLine = "";
+        } else if (key === "\u0003") { // ctrl + c
             term.write('^C');
             newLine();
             userPrompt();
             currLine = "";
-        } else if (key === '\r') {
-            // hitting enter
+        } else if (key === '\r') { // hitting enter
             newLine();
             entries.push(currLine.trim());
             await runCommandInTerminal(currLine.trim(), term)
-            newLine();
             userPrompt();
             currLine = "";
+            lastPositionInHistory ++;
         } else if (key === '\u007F') {
             // hitting delete
             if (term._core.buffer.x > 2 && currLine) {
@@ -144,7 +173,7 @@ const startTerminal = async () => {
 }
 
 console.log("Loading WASM binary for use")
-fetch('/cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
+fetch('cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
     bin = binData;
     console.log("Loaded WASM bin, starting terminal")
 }).catch((err) => {
@@ -175,15 +204,46 @@ const hideTerminal = () => {
     terminalElement.classList.add("hidden")
     toggleTerminalButton.classList.remove("half-right")
     toggleTerminalButton.classList.add("right-0")
+    toggleTerminalButton.innerHTML = `        <div class="flex">
+    <span class="leading-4">
+      ‹ Terminal <br />
+      <span class="text-xs">Ctrl + Shift + T</span>
+    </span>
+    <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
+  </div>`;
 }
-toggleTerminalButton.addEventListener("click", () => {
-    if (terminalElement.classList.contains("hidden")) {
-        appContainer.classList.remove("w-full")
+const showTerminal = () => {
+  appContainer.classList.remove("w-full")
         appContainer.classList.add("w-1/2");
         terminalElement.classList.remove("hidden")
         toggleTerminalButton.classList.remove("right-0")
         toggleTerminalButton.classList.add("half-right")
+        toggleTerminalButton.innerHTML = `<div class="flex">
+        <span class="leading-4">
+          › Terminal <br />
+          <span class="text-xs">Ctrl + Shift + T</span>
+        </span>
+        <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
+      </div>`;
+        setTimeout(() => {
+          fitAddon.fit();
+          term.focus();
+        }, 100);
+}
+toggleTerminalButton.addEventListener("click", () => {
+  if (terminalElement.classList.contains("hidden")) {
+    showTerminal(); 
+  } else {
+      hideTerminal();
+  }
+})
+
+document.addEventListener('keydown', (event) => {
+  if (event.ctrlKey && event.shiftKey && event.key === "T") {
+    if (terminalElement.classList.contains("hidden")) {
+      showTerminal(); 
     } else {
         hideTerminal();
     }
-})
+  }
+});
