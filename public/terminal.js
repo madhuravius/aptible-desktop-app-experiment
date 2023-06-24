@@ -185,18 +185,18 @@ const toggleTerminalButton = document.getElementById("show-hide-terminal");
 const loadingIndicator = document.getElementById("loading-indicator");
 
 const showTerminalButton = () => {
-toggleTerminalButton.classList.remove("hidden");
+  toggleTerminalButton.classList.remove("hidden");
 }
 const hideTerminalButton = () => {
-toggleTerminalButton.classList.add("hidden");
+  toggleTerminalButton.classList.add("hidden");
 }
 
 const showLoadingIndicator = () => {
-loadingIndicator.classList.remove("hidden");
+  loadingIndicator.classList.remove("hidden");
 }
 
 const hideLoadingIndicator = () => {
-loadingIndicator.classList.add("hidden");
+  loadingIndicator.classList.add("hidden");
 }
 
 const hideTerminal = () => {

@@ -215,6 +215,17 @@ func main() {
 				},
 			},
 			{
+				Name:  "operation:follow",
+				Usage: "This command displays logs for a given Operation.",
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					if err := c.OperationFollow(ctx); err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+			{
 				Name: "logs",
 				Flags: []cli.Flag{
 					&cli.Int64Flag{
