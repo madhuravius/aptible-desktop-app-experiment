@@ -1,18 +1,15 @@
-import { BrowserWindow, Menu, Tray, app } from "electron";
+import { BrowserWindow, Menu, Tray, app, nativeImage } from "electron";
 import path from "path";
 
 let isQuitting = false;
-// const trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../", "favicon.ico") : "dist/favicon.ico"
-const iconPath = process.env.VITE_DEV_SERVER_URL
-  ? path.join(__dirname, "../", "logo.png")
-  : "dist/logo.png";
+const iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "build/icon.png") : path.join(__dirname, "../icon.png") ;
 
 app.on("before-quit", function () {
   isQuitting = true;
 });
 
 app.whenReady().then(() => {
-  const tray = new Tray(iconPath);
+  const tray = new Tray(nativeImage.createFromPath(iconPath));
   const splash = new BrowserWindow({
     width: 330,
     height: 80,
@@ -36,22 +33,21 @@ app.whenReady().then(() => {
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    splash.loadFile("splash.html");
+    splash.loadFile("build/splash.html");
   } else {
     // Load your file
-    splash.loadFile("dist/splash.html");
+    splash.loadFile(path.join(__dirname, "../splash.html"));
   }
 
   setTimeout(() => {
     splash.destroy();
     mainWindow.show();
 
-    // You can use `process.env.VITE_DEV_SERVER_URL` when the vite command is called `serve`
     if (process.env.VITE_DEV_SERVER_URL) {
       mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     } else {
       // Load your file
-      mainWindow.loadFile("dist/index.html");
+      mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
     }
 
     // BEGIN TRAY-RELATED

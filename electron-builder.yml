@@ -1,0 +1,43 @@
+appId: com.aptible.aptible-desktop-app
+includeSubNodeModules: true
+productName: aptible-desktop-app
+directories:
+  buildResources: build
+  output: release
+files:
+  - from: dist-electron
+    to: dist-electron
+    filter:
+      - main.js
+  - from: dist
+    to: dist
+    filter:
+      - "**/*"
+  - from: .
+    to: .
+    filter:
+      - logo.png
+      - package.json
+      - splash.html
+# afterSign: build/notarize.js
+win:
+  executableName: aptible-desktop-app
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false
