@@ -8,37 +8,40 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func (c *Config) ListApps(ctx *cli.Context) {
-	var envs []aptible.Environment
+func ListLogDrains(cCtx *cli.Context) {
 	var err error
+	client, err := Client(cCtx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	environmentId := ctx.Value("environment").(int64)
-
+	environmentId := cCtx.Value("environment").(int64)
+	var envs []aptible.Environment
 	if environmentId > 0 {
-		environment, err := c.client.GetEnvironment(environmentId)
+		environment, err := client.GetEnvironment(environmentId)
 		if err != nil {
 			log.Fatal(err)
 		}
 		envs = []aptible.Environment{environment}
 	} else {
-		envs, err = c.client.GetEnvironments()
+		envs, err = client.GetEnvironments()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	for _, env := range envs {
-		apps, err := c.client.GetApps(env.ID)
+		dbs, err := client.GetDatabases(env.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if len(apps) == 0 {
+		if len(dbs) == 0 {
 			continue
 		}
 
 		fmt.Printf("=== %s\n", env.Handle)
-		for _, app := range apps {
-			fmt.Println(app.Handle)
+		for _, db := range dbs {
+			fmt.Println(db.Handle)
 		}
 	}
 }

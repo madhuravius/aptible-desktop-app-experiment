@@ -38,8 +38,6 @@ for pathToEdit in database-types language-types resource-types; do
     find ./src -type f -exec sed -i '' -e "s|/$pathToEdit|$pathToEdit|g" {} +
 done
 
-mv ./src/app/router-tmp.tsx ./src/app/router.tsx
-
 echo "Setting up package.json properly for use"
 npm pkg set 'main'="dist-electron/main.js"
 npm pkg set 'type'="commonjs"

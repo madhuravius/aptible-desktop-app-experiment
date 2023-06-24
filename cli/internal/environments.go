@@ -8,24 +8,20 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func ListEnvironments(cCtx *cli.Context) {
-	var err error
-	client, err := Client(cCtx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	environmentId := cCtx.Value("environment").(int64)
+func (c *Config) ListEnvironments(ctx *cli.Context) {
 	var envs []aptible.Environment
+	var err error
+
+	environmentId := ctx.Value("environment").(int64)
 	if environmentId > 0 {
-		environment, err := client.GetEnvironment(environmentId)
+		environment, err := c.client.GetEnvironment(environmentId)
 		if err != nil {
 			log.Fatal(err)
 		}
 		envs = []aptible.Environment{environment}
 		fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
 	} else {
-		envs, err = client.GetEnvironments()
+		envs, err = c.client.GetEnvironments()
 		if err != nil {
 			log.Fatal(err)
 		}

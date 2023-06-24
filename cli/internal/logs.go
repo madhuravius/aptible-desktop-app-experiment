@@ -10,16 +10,10 @@ type Resource struct {
 	ID int64
 }
 
-func Logs(cCtx *cli.Context) {
-	var err error
-	client, err := Client(cCtx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	appId := cCtx.Value("app").(int64)
-	dbId := cCtx.Value("database").(int64)
-	environmentId := cCtx.Value("environment").(int64)
+func (c *Config) Logs(ctx *cli.Context) {
+	appId := ctx.Value("app").(int64)
+	dbId := ctx.Value("database").(int64)
+	environmentId := ctx.Value("environment").(int64)
 
 	if appId == 0 && dbId == 0 {
 		log.Fatal("error - neither app nor database ids were provided, cannot continue")
@@ -27,7 +21,7 @@ func Logs(cCtx *cli.Context) {
 
 	if environmentId > 0 {
 		// doesn't get used unless flag is passed in
-		_, err := client.GetEnvironment(environmentId)
+		_, err := c.client.GetEnvironment(environmentId)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -35,7 +29,7 @@ func Logs(cCtx *cli.Context) {
 
 	r := Resource{}
 	if appId > 0 {
-		app, err := client.GetApp(appId)
+		app, err := c.client.GetApp(appId)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -46,7 +40,7 @@ func Logs(cCtx *cli.Context) {
 	}
 
 	if dbId > 0 {
-		db, err := client.GetDatabase(dbId)
+		db, err := c.client.GetDatabase(dbId)
 		if err != nil {
 			log.Fatal(err)
 		}

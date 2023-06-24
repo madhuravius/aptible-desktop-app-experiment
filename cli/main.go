@@ -28,6 +28,14 @@ const desc = `aptible is a command line interface to the Aptible.com platform.
 It allows users to manage authentication, application launch, deployment, logging, and more.
 To read more, use the docs command to view Aptible's help on the web.`
 
+func genConfig(ctx *cli.Context) *internal.Config {
+	c, err := internal.NewConfig(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return c
+}
+
 func main() {
 	app := &cli.App{
 		Name:  "aptible",
@@ -36,7 +44,7 @@ func main() {
 			{
 				Name:  "about",
 				Usage: "print some information about the CLI aptible CLI",
-				Action: func(cCtx *cli.Context) error {
+				Action: func(_ *cli.Context) error {
 					fmt.Printf("%s\n%s\n", logo, desc)
 					return nil
 				},
@@ -51,8 +59,9 @@ func main() {
 					},
 				},
 				Usage: "This command lists Apps in an Environment.",
-				Action: func(cCtx *cli.Context) error {
-					internal.ListApps(cCtx)
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					c.ListApps(ctx)
 					return nil
 				},
 			},
@@ -66,8 +75,9 @@ func main() {
 					},
 				},
 				Usage: "This command lists Databases in an Environment.",
-				Action: func(cCtx *cli.Context) error {
-					internal.ListDatabases(cCtx)
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					c.ListDatabases(ctx)
 					return nil
 				},
 			},
@@ -81,8 +91,9 @@ func main() {
 					},
 				},
 				Usage: "This command lists all Environments.",
-				Action: func(cCtx *cli.Context) error {
-					internal.ListEnvironments(cCtx)
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					c.ListEnvironments(ctx)
 					return nil
 				},
 			},
@@ -106,8 +117,9 @@ func main() {
 					},
 				},
 				Usage: "This command lets you access real-time logs for an App or Database.",
-				Action: func(cCtx *cli.Context) error {
-					internal.Logs(cCtx)
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					c.Logs(ctx)
 					return nil
 				},
 			},

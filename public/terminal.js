@@ -105,8 +105,7 @@ const startTerminal = async () => {
     // main loop
     term.onKey(async (char, ev) => {
         const { key } = char;
-        if (["\u0038","\u0040"].includes(key)) {
-            // ignore up/down arrows
+        if (["\x1B[D","\x1B[C"].includes(key)) { // ignore left/right arrows for now
             return
         } 
 
@@ -156,9 +155,8 @@ const startTerminal = async () => {
             await runCommandInTerminal(currLine.trim(), term)
             userPrompt();
             currLine = "";
-            lastPositionInHistory ++;
-        } else if (key === '\u007F') {
-            // hitting delete
+            lastPositionInHistory = entries.length - 1;
+        } else if (key === '\u007F') { // hitting delete
             if (term._core.buffer.x > 2 && currLine) {
                 term.write("\b \b")
                 currLine = currLine.slice(0, currLine.length - 1)
