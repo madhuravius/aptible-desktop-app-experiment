@@ -44,7 +44,7 @@ app.whenReady().then(() => {
     splash.loadFile("splash.html");
   } else {
     // Load your file
-    splash.loadFile(path.join(__dirname, "../splash.html"));
+    splash.loadFile("splash.html");
   }
 
   setTimeout(() => {
@@ -55,7 +55,7 @@ app.whenReady().then(() => {
       mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     } else {
       // Load your file
-      mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+      mainWindow.loadFile("index.html");
     }
 
     // BEGIN TRAY-RELATED

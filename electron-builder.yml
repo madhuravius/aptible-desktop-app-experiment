@@ -9,16 +9,16 @@ files:
     to: dist-electron
     filter:
       - main.js
-  - from: dist
-    to: dist
-    filter:
-      - "**/*"
   - from: .
     to: .
     filter:
       - logo.png
       - package.json
       - splash.html
+  - from: dist
+    to: .
+    filter:
+      - "**/*"
 # afterSign: build/notarize.js
 win:
   executableName: aptible-desktop-app
