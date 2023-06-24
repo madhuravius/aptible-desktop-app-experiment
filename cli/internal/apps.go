@@ -42,3 +42,13 @@ func (c *Config) ListApps(ctx *cli.Context) error {
 	}
 	return nil
 }
+
+// config
+
+// deploy
+
+// rebuild
+
+// restart
+
+// services

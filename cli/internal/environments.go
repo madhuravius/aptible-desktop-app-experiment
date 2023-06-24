@@ -18,7 +18,6 @@ func (c *Config) ListEnvironments(ctx *cli.Context) error {
 			return err
 		}
 		envs = []aptible.Environment{environment}
-		fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
 	} else {
 		envs, err = c.client.GetEnvironments()
 		if err != nil {

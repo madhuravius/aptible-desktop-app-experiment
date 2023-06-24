@@ -28,3 +28,29 @@ func (c *Config) ListDatabases(ctx *cli.Context) error {
 	}
 	return nil
 }
+
+// backup
+
+// clone
+
+// create
+
+// deprovision
+
+// dump
+
+// execute
+
+// reload
+
+// rename
+
+// replicate
+
+// restart
+
+// tunnel
+
+// url
+
+// versions
