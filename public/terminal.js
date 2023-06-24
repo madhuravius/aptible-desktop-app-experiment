@@ -17,6 +17,7 @@ console.log = (params) => {
 }
 
 const runAptibleCLI = async () => {
+    showLoadingIndicator();
     const obj = await WebAssembly.instantiate(bin, go.importObject); // reset instance
     await go.run(obj.instance)
     return new Promise(r => {
@@ -27,6 +28,7 @@ const runAptibleCLI = async () => {
       function checkState () {
         if (go.exited == true) {
           clearInterval(timerId);
+          hideLoadingIndicator();
           r();
         }
       }
@@ -170,64 +172,65 @@ const startTerminal = async () => {
     })
 }
 
-console.log("Loading WASM binary for use")
-fetch('cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
-    bin = binData;
-    console.log("Loaded WASM bin, starting terminal")
-}).catch((err) => {
-    console.error(err);
-}).finally(() => {
-    startTerminal();
-});
-
-const showTerminalButton = () => {
-    toggleTerminalButton.classList.remove("hidden");
-}
-const hideTerminalButton = () => {
-    toggleTerminalButton.classList.add("hidden");
-}
-
 setInterval(async () => {
-    if (window.reduxStore?.getState) {
-        const { token: { accessToken }} = window.reduxStore.getState();
-        if (!accessToken) hideTerminalButton();
-    }
+  if (window.reduxStore?.getState) {
+      const { token: { accessToken }} = window.reduxStore.getState();
+      if (!accessToken) hideTerminalButton();
+  }
 }, 1000)
 
 
 const appContainer = document.getElementById("electron-app-container");
 const toggleTerminalButton = document.getElementById("show-hide-terminal");
+const loadingIndicator = document.getElementById("loading-indicator");
+
+const showTerminalButton = () => {
+toggleTerminalButton.classList.remove("hidden");
+}
+const hideTerminalButton = () => {
+toggleTerminalButton.classList.add("hidden");
+}
+
+const showLoadingIndicator = () => {
+loadingIndicator.classList.remove("hidden");
+}
+
+const hideLoadingIndicator = () => {
+loadingIndicator.classList.add("hidden");
+}
+
 const hideTerminal = () => {
-    appContainer.classList.add("w-full");
-    terminalElement.classList.add("hidden")
-    toggleTerminalButton.classList.remove("half-right")
-    toggleTerminalButton.classList.add("right-0")
-    toggleTerminalButton.innerHTML = `        <div class="flex">
-    <span class="leading-4">
-      ‹ Terminal <br />
-      <span class="text-xs">Ctrl + Shift + T</span>
-    </span>
-    <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
-  </div>`;
+  appContainer.classList.add("w-full");
+  terminalElement.classList.add("hidden")
+  toggleTerminalButton.classList.remove("half-right")
+  toggleTerminalButton.classList.add("right-0")
+  toggleTerminalButton.innerHTML = `        <div class="flex">
+  <span class="leading-4">
+    ‹ Terminal <br />
+    <span class="text-xs">Ctrl + Shift + T</span>
+  </span>
+  <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
+</div>`;
 }
 const showTerminal = () => {
-  appContainer.classList.remove("w-full")
-        appContainer.classList.add("w-1/2");
-        terminalElement.classList.remove("hidden")
-        toggleTerminalButton.classList.remove("right-0")
-        toggleTerminalButton.classList.add("half-right")
-        toggleTerminalButton.innerHTML = `<div class="flex">
-        <span class="leading-4">
-          › Terminal <br />
-          <span class="text-xs">Ctrl + Shift + T</span>
-        </span>
-        <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
-      </div>`;
-        setTimeout(() => {
-          fitAddon.fit();
-          term.focus();
-        }, 100);
+appContainer.classList.remove("w-full")
+      appContainer.classList.add("w-1/2");
+      terminalElement.classList.remove("hidden")
+      toggleTerminalButton.classList.remove("right-0")
+      toggleTerminalButton.classList.add("half-right")
+      toggleTerminalButton.innerHTML = `<div class="flex">
+      <span class="leading-4">
+        › Terminal <br />
+        <span class="text-xs">Ctrl + Shift + T</span>
+      </span>
+      <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
+    </div>`;
+      setTimeout(() => {
+        fitAddon.fit();
+        term.focus();
+      }, 100);
 }
+
 toggleTerminalButton.addEventListener("click", () => {
   if (terminalElement.classList.contains("hidden")) {
     showTerminal(); 
@@ -244,4 +247,17 @@ document.addEventListener('keydown', (event) => {
         hideTerminal();
     }
   }
+});
+
+// MAIN LOOP
+console.log("Loading WASM binary for use")
+showLoadingIndicator();
+fetch('cli.wasm').then(response => response.arrayBuffer()).then((binData) => {
+    bin = binData;
+    console.log("Loaded WASM bin, starting terminal")
+}).catch((err) => {
+    console.error(err);
+}).finally(() => {
+    startTerminal();
+    hideLoadingIndicator();
 });
