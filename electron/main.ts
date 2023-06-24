@@ -1,15 +1,23 @@
 import { BrowserWindow, Menu, Tray, app, nativeImage } from "electron";
 import path from "path";
 
+// global garb to prevent gcing and losing
+let tray; // must be specified globally or will be gc
+let trayIconPath;
+let iconPath;
+// end of global garb
+
 let isQuitting = false;
-const iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "build/icon.png") : path.join(__dirname, "../icon.png") ;
 
 app.on("before-quit", function () {
   isQuitting = true;
 });
 
 app.whenReady().then(() => {
-  const tray = new Tray(nativeImage.createFromPath(iconPath));
+  iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "icon.png") : path.join(__dirname, "../icon.png");
+  trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
+  tray = new Tray(nativeImage.createFromPath(trayIconPath));
+
   const splash = new BrowserWindow({
     width: 330,
     height: 80,
@@ -33,7 +41,7 @@ app.whenReady().then(() => {
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    splash.loadFile("build/splash.html");
+    splash.loadFile("splash.html");
   } else {
     // Load your file
     splash.loadFile(path.join(__dirname, "../splash.html"));

@@ -73,6 +73,7 @@ const startTerminal = async () => {
     fitAddon = fitAddonToSet;
 
     let currLine = "";
+    let lastPositionInHistory = 0;
     const entries = [];
 
     const userPromptText = () => {
@@ -103,6 +104,7 @@ const startTerminal = async () => {
     // todo - https://github.com/EDDYMENS/interactive-terminal/blob/main/frontend.js#L21
     // main loop
     term.onKey(async (char, ev) => {
+        consoleLog(char)
         const { key } = char;
         if (["\u0038","\u0040"].includes(key)) {
             // ignore up/down arrows
@@ -117,19 +119,45 @@ const startTerminal = async () => {
             userPrompt();
             currLine = "";
             hideTerminal();
-        }
-        else if (key === "\u0003") { // ctrl + c
+        } else if (key === "\x1B[A") { // up arrow
+          currLine = "";
+          if (entries.length > 0) {
+            if (lastPositionInHistory === entries.length) {
+              currLine = entries.at(-1);
+              lastPositionInHistory --;
+            } else if (lastPositionInHistory >= 0) {
+              currLine = entries.at(lastPositionInHistory)
+              lastPositionInHistory --;
+            }
+            term.write('\x1b[2K\r'); // clear CURRENT line
+            userPrompt();
+            term.write(currLine);
+          }
+        } else if (key === "\x1B[B") { // down arrow
+          if (lastPositionInHistory < entries.length - 1) {
+            currLine = entries.at(lastPositionInHistory)
+            lastPositionInHistory ++;
+            term.write('\x1b[2K\r'); // clear CURRENT line
+            userPrompt();
+            term.write(currLine);
+          }
+        } else if (key === "\f") { // ctrl + l / clear
+            term.clear();
+            newLine();
+            userPrompt();
+            currLine = "";
+        } else if (key === "\u0003") { // ctrl + c
             term.write('^C');
             newLine();
             userPrompt();
             currLine = "";
-        } else if (key === '\r') {
-            // hitting enter
+        } else if (key === '\r') { // hitting enter
             newLine();
             entries.push(currLine.trim());
             await runCommandInTerminal(currLine.trim(), term)
             userPrompt();
             currLine = "";
+            lastPositionInHistory ++;
         } else if (key === '\u007F') {
             // hitting delete
             if (term._core.buffer.x > 2 && currLine) {
