@@ -15,6 +15,10 @@ files:
       - logo.png
       - package.json
       - splash.html
+  - from: build
+    to: .
+    filter: 
+      - "**/*"
   - from: dist
     to: .
     filter:

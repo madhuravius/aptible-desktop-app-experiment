@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, Tray, app, nativeImage } from "electron";
+import { BrowserWindow, Menu, Tray, app, nativeImage, protocol } from "electron";
 import path from "path";
 
 // global garb to prevent gcing and losing
