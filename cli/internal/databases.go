@@ -2,21 +2,20 @@ package internal
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/urfave/cli/v2"
 )
 
-func (c *Config) ListDatabases(ctx *cli.Context) {
+func (c *Config) ListDatabases(ctx *cli.Context) error {
 	envs, err := c.getEnvironmentsFromFlags(ctx)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, env := range envs {
 		dbs, err := c.client.GetDatabases(env.ID)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if len(dbs) == 0 {
 			continue
@@ -27,4 +26,5 @@ func (c *Config) ListDatabases(ctx *cli.Context) {
 			fmt.Println(db.Handle)
 		}
 	}
+	return nil
 }

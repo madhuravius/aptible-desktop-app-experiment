@@ -1,20 +1,19 @@
 package internal
 
 import (
-	"log"
 	"os"
 
 	"golang.org/x/crypto/ssh"
 )
 
-func SetupSSHClient(user, password, host, publicKeyPath, privateKeyPath string) {
+func SetupSSHClient(user, password, host, publicKeyPath, privateKeyPath string) error {
 	privateKeyBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	signer, err := ssh.ParsePrivateKey(privateKeyBytes)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	config := &ssh.ClientConfig{
@@ -26,16 +25,18 @@ func SetupSSHClient(user, password, host, publicKeyPath, privateKeyPath string) 
 
 	conn, err := ssh.Dial("tcp", host, config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer conn.Close()
 
 	var session *ssh.Session
 	session, err = conn.NewSession()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer session.Close()
+
+	return nil
 }
 
 /*

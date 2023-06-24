@@ -2,13 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
 )
 
-func (c *Config) ListEnvironments(ctx *cli.Context) {
+func (c *Config) ListEnvironments(ctx *cli.Context) error {
 	var envs []aptible.Environment
 	var err error
 
@@ -16,18 +15,19 @@ func (c *Config) ListEnvironments(ctx *cli.Context) {
 	if environmentId > 0 {
 		environment, err := c.client.GetEnvironment(environmentId)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		envs = []aptible.Environment{environment}
 		fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
 	} else {
 		envs, err = c.client.GetEnvironments()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	for _, env := range envs {
 		fmt.Println(env.Handle)
 	}
+	return nil
 }

@@ -61,7 +61,9 @@ func main() {
 				Usage: "This command lists Apps in an Environment.",
 				Action: func(ctx *cli.Context) error {
 					c := genConfig(ctx)
-					c.ListApps(ctx)
+					if err := c.ListApps(ctx); err != nil {
+						log.Fatal(err)
+					}
 					return nil
 				},
 			},
@@ -77,7 +79,37 @@ func main() {
 				Usage: "This command lists Databases in an Environment.",
 				Action: func(ctx *cli.Context) error {
 					c := genConfig(ctx)
-					c.ListDatabases(ctx)
+					if err := c.ListDatabases(ctx); err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+			{
+				Name: "endpoints:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "app",
+						Value: 0,
+						Usage: "Specify an app to run your endpoints:list command on",
+					},
+					&cli.Int64Flag{
+						Name:  "database",
+						Value: 0,
+						Usage: "Specify a database to run your endpoints:list command on",
+					},
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your endpoints:list command on",
+					},
+				},
+				Usage: "This command lists all Endpoints.",
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					if err := c.ListEndpoints(ctx); err != nil {
+						log.Fatal(err)
+					}
 					return nil
 				},
 			},
@@ -93,7 +125,45 @@ func main() {
 				Usage: "This command lists all Environments.",
 				Action: func(ctx *cli.Context) error {
 					c := genConfig(ctx)
-					c.ListEnvironments(ctx)
+					if err := c.ListEnvironments(ctx); err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+			{
+				Name: "log_drain:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your log_drain:list command on",
+					},
+				},
+				Usage: "This command lists all Log Drains.",
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					if err := c.ListLogDrains(ctx); err != nil {
+						log.Fatal(err)
+					}
+					return nil
+				},
+			},
+			{
+				Name: "metric_drain:list",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name:  "environment",
+						Value: 0,
+						Usage: "Specify an environment to run your metric_drain:list command on",
+					},
+				},
+				Usage: "This command lists all Metric Drains.",
+				Action: func(ctx *cli.Context) error {
+					c := genConfig(ctx)
+					if err := c.ListMetricDrains(ctx); err != nil {
+						log.Fatal(err)
+					}
 					return nil
 				},
 			},
@@ -119,7 +189,9 @@ func main() {
 				Usage: "This command lets you access real-time logs for an App or Database.",
 				Action: func(ctx *cli.Context) error {
 					c := genConfig(ctx)
-					c.Logs(ctx)
+					if err := c.Logs(ctx); err != nil {
+						log.Fatal(err)
+					}
 					return nil
 				},
 			},

@@ -2,46 +2,31 @@ package internal
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
 )
 
-func ListLogDrains(cCtx *cli.Context) {
+func (c *Config) ListLogDrains(ctx *cli.Context) error {
 	var err error
-	client, err := Client(cCtx)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	environmentId := cCtx.Value("environment").(int64)
-	var envs []aptible.Environment
-	if environmentId > 0 {
-		environment, err := client.GetEnvironment(environmentId)
-		if err != nil {
-			log.Fatal(err)
-		}
-		envs = []aptible.Environment{environment}
-	} else {
-		envs, err = client.GetEnvironments()
-		if err != nil {
-			log.Fatal(err)
-		}
+	envs, err := c.getEnvironmentsFromFlags(ctx)
+	if err != nil {
+		return err
 	}
 
 	for _, env := range envs {
-		dbs, err := client.GetDatabases(env.ID)
+		logDrains, err := c.client.GetLogDrains(env.ID)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		if len(dbs) == 0 {
+		if len(logDrains) == 0 {
 			continue
 		}
 
 		fmt.Printf("=== %s\n", env.Handle)
-		for _, db := range dbs {
-			fmt.Println(db.Handle)
+		for _, logDrain := range logDrains {
+			fmt.Println(logDrain.Handle)
 		}
 	}
+	return nil
 }
