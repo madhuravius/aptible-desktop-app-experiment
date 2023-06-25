@@ -96,7 +96,6 @@ app.whenReady().then(() => {
         // taken from: https://stackoverflow.com/a/32415579
         // when external links, send them to browser
         mainWindow.webContents.on('will-navigate', async function (e, url) {
-            console.log(e, url)
             if (url != mainWindow.webContents.getURL()) {
                 e.preventDefault()
                 await shell.openExternal(url)
