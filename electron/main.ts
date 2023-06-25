@@ -75,6 +75,7 @@ app.whenReady().then(() => {
 
     mainWindow.webContents.on('did-finish-load', () => {
         splash.destroy();
+        mainWindow.maximize();
         mainWindow.show();
     })
 
