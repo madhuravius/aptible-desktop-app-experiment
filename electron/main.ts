@@ -34,8 +34,8 @@ app.whenReady().then(() => {
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
 
     const splash = new BrowserWindow({
-        width: 330,
-        height: 80,
+        width: 800,
+        height: 800,
         icon: iconPath,
         transparent: true,
         frame: false,
@@ -67,60 +67,60 @@ app.whenReady().then(() => {
     globalShortcut.register('CommandOrControl+R', () => {});
     globalShortcut.register('F5', () => {});
 
-    setTimeout(() => {
+    if (process.env.VITE_DEV_SERVER_URL) {
+        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    } else {
+        // Load your file
+        mainWindow.loadFile("index.html");
+    }
+
+    mainWindow.webContents.on('did-finish-load', () => {
         splash.destroy();
         mainWindow.show();
+    })
 
-        if (process.env.VITE_DEV_SERVER_URL) {
-            mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-        } else {
-            // Load your file
-            mainWindow.loadFile("index.html");
-        }
+    // BEGIN TRAY-RELATED
+    // add desktop app-specific code (ex: terminal)
+    mainWindow.on("minimize", function (event) {
+        event.preventDefault();
+        mainWindow.hide();
+    });
 
-        // BEGIN TRAY-RELATED
-        // add desktop app-specific code (ex: terminal)
-        mainWindow.on("minimize", function (event) {
+    mainWindow.on("close", function (event) {
+        if (!isQuitting) {
             event.preventDefault();
             mainWindow.hide();
-        });
+        }
+        return false;
+    });
 
-        mainWindow.on("close", function (event) {
-            if (!isQuitting) {
-                event.preventDefault();
-                mainWindow.hide();
-            }
-            return false;
-        });
+    // taken from: https://stackoverflow.com/a/32415579
+    // when external links, send them to browser
+    mainWindow.webContents.on('will-navigate', async function (e, url) {
+        if (url != mainWindow.webContents.getURL()) {
+            e.preventDefault()
+            await shell.openExternal(url)
+        }
+    });
 
-        // taken from: https://stackoverflow.com/a/32415579
-        // when external links, send them to browser
-        mainWindow.webContents.on('will-navigate', async function (e, url) {
-            if (url != mainWindow.webContents.getURL()) {
-                e.preventDefault()
-                await shell.openExternal(url)
-            }
-        });
-
-        tray.setContextMenu(
-            Menu.buildFromTemplate([
-                {
-                    label: "Show Aptible",
-                    click: function () {
-                        mainWindow.show();
-                    },
+    tray.setContextMenu(
+        Menu.buildFromTemplate([
+            {
+                label: "Show Aptible",
+                click: function () {
+                    mainWindow.show();
                 },
-                {
-                    label: "Quit",
-                    click: function () {
-                        isQuitting = true;
-                        app.quit();
-                    },
+            },
+            {
+                label: "Quit",
+                click: function () {
+                    isQuitting = true;
+                    app.quit();
                 },
-            ]),
-        );
-        // END TRAY-RELATED
-    }, 1000);
+            },
+        ]),
+    );
+    // END TRAY-RELATED
 });
 
 // THIS WILL NEED TO BE REFACTORED TO ONLY QUERY ON DEMAND
