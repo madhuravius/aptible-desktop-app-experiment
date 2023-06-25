@@ -72,14 +72,80 @@ func Client(token, apiHost string) (*aptible.Client, error) {
 	return client, err
 }
 
-func (c *Config) getDatabaseIDFromFlags(ctx *cli.Context) (int64, error) {
-	rawDbIdOrHandle := ctx.Value("database").(string)
-	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+func (c *Config) getEnvironmentsFromFlags(ctx *cli.Context) ([]aptible.Environment, error) {
+	var err error
+
+	// if there is an error, we will skip it as we defer to whatever list is provided instead
+	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
+
+	var envs []aptible.Environment
+	if environmentId != 0 {
+		environment, err := c.client.GetEnvironment(environmentId)
+		if err != nil {
+			return nil, err
+		}
+		envs = []aptible.Environment{environment}
+	} else {
+		envs, err = c.client.GetEnvironments()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return envs, nil
+}
+
+func (c *Config) getEnvironmentIDFromFlags(ctx *cli.Context) (int64, error) {
+	rawEnvIdOrHandle := ctx.Value("environment").(string)
+	if envId, err := strconv.ParseInt(rawEnvIdOrHandle, 10, 64); err != nil {
 		envs, envsErr := c.client.GetEnvironments()
 		if envsErr != nil {
-			return 0, fmt.Errorf("could not query environments to get databaseId from handle: %s", err.Error())
+			return 0, fmt.Errorf("could not query environments to get environmentId: %s", err.Error())
 		}
 		for _, env := range envs {
+			if env.Handle == rawEnvIdOrHandle {
+				return env.ID, nil
+			}
+		}
+	} else {
+		return envId, nil
+	}
+	return 0, fmt.Errorf("specified environment does not exist: %s", rawEnvIdOrHandle)
+}
+
+func (c *Config) getAppIDFromFlags(ctx *cli.Context) (int64, error) {
+	environments, err := c.getEnvironmentsFromFlags(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	rawAppIdOrHandle := ctx.Value("app").(string)
+	if appId, err := strconv.ParseInt(rawAppIdOrHandle, 10, 64); err != nil {
+		for _, env := range environments {
+			apps, appsErr := c.client.GetApps(env.ID)
+			if appsErr != nil {
+				return 0, fmt.Errorf("could not query apps to get appId from handle: %s", err.Error())
+			}
+			for _, app := range apps {
+				if app.Handle == rawAppIdOrHandle {
+					return app.ID, nil
+				}
+			}
+		}
+	} else {
+		return appId, nil
+	}
+	return 0, fmt.Errorf("specified app does not exist: %s", rawAppIdOrHandle)
+}
+
+func (c *Config) getDatabaseIDFromFlags(ctx *cli.Context) (int64, error) {
+	environments, err := c.getEnvironmentsFromFlags(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	rawDbIdOrHandle := ctx.Value("database").(string)
+	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+		for _, env := range environments {
 			dbs, dbsErr := c.client.GetDatabases(env.ID)
 			if dbsErr != nil {
 				return 0, fmt.Errorf("could not query databases to get databaseId from handle: %s", err.Error())
@@ -101,7 +167,7 @@ func (c *Config) getDatabasesFromFlags(ctx *cli.Context) ([]aptible.Database, er
 
 	// if there is an error, we will skip it as we defer to whatever list is provided instead
 	var dbs []aptible.Database
-	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err == nil {
 		db, err := c.client.GetDatabase(dbId)
 		if err != nil {
 			return nil, err
@@ -118,35 +184,11 @@ func (c *Config) getDatabasesFromFlags(ctx *cli.Context) ([]aptible.Database, er
 			if dbsErr != nil {
 				return nil, fmt.Errorf("could not query databases to collect for environment: %s", err.Error())
 			}
-			for _, db := range dbResults {
-				dbs = append(dbs, db)
-			}
+			dbs = append(dbs, dbResults...)
 		}
 	}
 
 	return dbs, nil
-}
-
-func (c *Config) getEnvironmentsFromFlags(ctx *cli.Context) ([]aptible.Environment, error) {
-	var err error
-
-	// if there is an error, we will skip it as we defer to whatever list is provided instead
-	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
-
-	var envs []aptible.Environment
-	if environmentId != 0 {
-		environment, err := c.client.GetEnvironment(environmentId)
-		if err != nil {
-			return nil, err
-		}
-		envs = []aptible.Environment{environment}
-	} else {
-		envs, err = c.client.GetEnvironments()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return envs, nil
 }
 
 // Color - adjust color based on supplied codes, supplied from:
@@ -174,20 +216,13 @@ func CheckHostPortAccessible(host, port string) error {
 	return nil
 }
 
-func (c *Config) getEnvironmentIDFromFlags(ctx *cli.Context) (int64, error) {
-	rawEnvIdOrHandle := ctx.Value("environment").(string)
-	if envId, err := strconv.ParseInt(rawEnvIdOrHandle, 10, 64); err != nil {
-		envs, envsErr := c.client.GetEnvironments()
-		if envsErr != nil {
-			return 0, fmt.Errorf("could not query environments to get environmentId: %s", err.Error())
-		}
-		for _, env := range envs {
-			if env.Handle == rawEnvIdOrHandle {
-				return env.ID, nil
-			}
-		}
-	} else {
-		return envId, nil
+func translateDateToStdOut(date string) (string, error) {
+	// 2023-06-23T05:55:20.000Z - in
+	// 2023-05-25 05:01:07 UTC - out
+	parsedDate, err := time.Parse("2006-01-02T15:04:05.000Z", date)
+	if err != nil {
+		return "", err
 	}
-	return 0, fmt.Errorf("specified environment does not exist: %s", rawEnvIdOrHandle)
+
+	return parsedDate.Format("2006-01-02 15:04:05 UTC"), nil
 }
