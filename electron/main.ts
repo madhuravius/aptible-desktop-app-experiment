@@ -1,4 +1,4 @@
-import {app, BrowserWindow, ipcMain, Menu, nativeImage, Tray} from "electron";
+import {app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, Tray} from "electron";
 import {exec, spawn} from "child_process";
 import remoteMain from '@electron/remote/main';
 import path from "path";
@@ -62,6 +62,10 @@ app.whenReady().then(() => {
         // Load your file
         splash.loadFile("splash.html");
     }
+
+    // disable reloads
+    globalShortcut.register('CommandOrControl+R', () => {});
+    globalShortcut.register('F5', () => {});
 
     setTimeout(() => {
         splash.destroy();

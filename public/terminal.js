@@ -85,7 +85,7 @@ const runCommandInTerminal = async (command) => {
             setTimeout(() => {
                 newLine();
                 userPrompt();
-            }, 250); // if this is done too fast, things end badly
+            }, 300); // if this is done too fast, things end badly
         },
         func: () => completedRemoteTask
     })
@@ -349,7 +349,6 @@ const callback = (_) => {
                 !Array.from(traverseParents(possibleClipboard, 3).querySelectorAll('div')).find((el) => el.textContent.includes("DONE"))) {
                 desiredCommandInTerminal = desiredCommandInTerminal.replace("operation:logs", "operation:follow")
             }
-
             runInCodeElement.innerHTML = `<div class="ml-2" onclick="openTerminalAndRunCommand('${desiredCommandInTerminal}')">
     <svg viewBox="0 0 24 24" width="16" height="16" stroke="#888C90" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cursor-pointer">
         <title>Run in terminal</title>
