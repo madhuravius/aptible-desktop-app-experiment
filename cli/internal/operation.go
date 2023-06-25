@@ -59,7 +59,7 @@ func (c *Config) OperationFollow(ctx *cli.Context) error {
 	}
 
 	fmt.Print(Green(fmt.Sprintf("Streaming logs for running %s #%d on %s...\n", op.Type, op.ID, op.Handle)))
-	err = AptibleSSH(privateKey, sshPortalOp.Certificate, stack.PortalHost, stack.HostKey, sshPortalOp.SSHUser, c.token, stack.PortalPort)
+	err = AptibleSSH(publicKey, privateKey, sshPortalOp.Certificate, stack.PortalHost, stack.HostKey, sshPortalOp.SSHUser, c.token, stack.PortalPort)
 	if err != nil {
 		return err
 	}
