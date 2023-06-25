@@ -1,10 +1,8 @@
-let initialFetchedKeys = false;
-let keys; // should be dropped from global state
 let term;
 let termActivity = false;
 let fitAddon;
 
-const terminalElement = document.getElementById("terminal")
+const terminalEntriesKey = "terminalEntries";
 
 const waitFor = async ({
                                 func, interval = 25, callback = () => {
@@ -22,13 +20,6 @@ const waitFor = async ({
         }
     });
 }
-
-const getKeys = () => {
-    ipcRenderer.send("request:keys");
-    ipcRenderer.receive("received:keys", () => {
-        initialFetchedKeys = true;
-    });
-};
 
 // the only purpose of this is to drain the queue with a subscriber, it does nothing else but log
 // to term
@@ -85,7 +76,7 @@ const runCommandInTerminal = async (command) => {
             setTimeout(() => {
                 newLine();
                 userPrompt();
-            }, 250); // if this is done too fast, things end badly
+            }, 300); // if this is done too fast, things end badly
         },
         func: () => completedRemoteTask
     })
@@ -128,8 +119,8 @@ const startTerminal = async () => {
     fitAddon = fitAddonToSet;
 
     let currLine = "";
-    let lastPositionInHistory = 0;
-    const entries = [];
+    const entries = JSON.parse(localStorage.getItem(terminalEntriesKey) || '[]');
+    let lastPositionInHistory = entries.length > 0 ? entries.length - 1 : 0;
 
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
@@ -160,8 +151,8 @@ const startTerminal = async () => {
 
         // do not allow other actions while an activity is ongoing
         if (termActivity) return
-        // ignore left/right arrows for now
-        if (["\x1B[D", "\x1B[C"].includes(key)) return
+        // ignore left/right arrows for now and jump words (option-arrow on mac) too
+        if (["\x1B[D", "\x1B[C", "\x1Bb", "\x1Bf", "\x1B[1;3A", "\x1B[1;3B"].includes(key)) return
 
         // normal flows
         if (key === "\u0004") {
@@ -209,13 +200,24 @@ const startTerminal = async () => {
             if (term._core.buffer.x > 3 && currLine) {
                 term.write("\b \b")
                 currLine = currLine.slice(0, currLine.length - 1)
-            } else {
-
+            }
+        } else if (key === '\x1B\x7F') {
+            if (term._core.buffer.x > 3 && currLine) {
+                const words = currLine
+                    .split(" ")
+                    .map((word) => !!word ? word : null)
+                    .filter((word) => !!word); // drop empty spaces
+                let wordLength = words.at(-1).length; // adding
+                if (words.length > 1) wordLength += 1; // account for extra space except start (which always has one)
+                term.write('\b \b'.repeat(wordLength))
+                currLine = currLine.substring(0, currLine.length - wordLength)
             }
         } else {
             currLine += key;
             term.write(key);
         }
+
+        localStorage.setItem(terminalEntriesKey, JSON.stringify(entries))
     })
 }
 
@@ -227,6 +229,7 @@ setInterval(async () => {
 }, 1000)
 
 
+const terminalElement = document.getElementById("terminal")
 const appContainer = document.getElementById("electron-app-container");
 const toggleTerminalButton = document.getElementById("show-hide-terminal");
 const loadingIndicator = document.getElementById("loading-indicator");
@@ -256,7 +259,7 @@ const unshiftLoadingIndicatorForScroll = () => {
 
 const reconcileLoadingIndicatorWithScroll = () => {
     // if scroll height exceeds a certain value, adjust margin of loader
-    if (!terminalElement.classList.contains("hidden")) {
+    if (!terminalElement.classList.contains("hidden") && term?._core?.viewport?._activeBuffer) {
         if (term._core.viewport._activeBuffer.lines.length > term._core.viewport._activeBuffer._rows) {
             shiftLoadingIndicatorForScroll()
         } else {
@@ -274,7 +277,7 @@ const hideTerminal = () => {
     toggleTerminalButton.classList.add("right-0")
     toggleTerminalButton.innerHTML = `        <div class="flex">
   <span class="leading-4">
-    ‹ Terminal <br />
+    ‹ CLI <br />
     <span class="text-xs">Ctrl + Shift + T</span>
   </span>
   <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
@@ -290,7 +293,7 @@ const showTerminal = () => {
     toggleTerminalButton.classList.add("half-right")
     toggleTerminalButton.innerHTML = `<div class="flex">
       <span class="leading-4">
-        › Terminal <br />
+        › CLI <br />
         <span class="text-xs">Ctrl + Shift + T</span>
       </span>
       <img class="inline-block ml-2 h-8" src="resource-types/logo-service.png" />
@@ -319,13 +322,61 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+// only select those with child of > svg > title with "Copy Icon"
+const openTerminalAndRunCommand = async (command) => {
+    showTerminal()
+    if (!termActivity) {
+        term.write(command);
+        newLine();
+        await runCommandInTerminal(command);
+    }
+}
+
+// derived  from: https://stackoverflow.com/a/65708136
+const traverseParents = (element, level = 1) => {
+    while (level-- > 0) {
+        element = element.parentNode;
+        if (!element) return null;
+    }
+    return element;
+}
+
+const callback = (_) => {
+    // affix exec capability to clipboards
+    const possibleClipboards = document.querySelectorAll('div[title^=\'aptible \']:not(.mutated-for-desktop-app)')
+    possibleClipboards.forEach((possibleClipboard) => {
+        if (possibleClipboard.querySelector("title")?.textContent === "Copy Icon") {
+            const runInCodeElement = document.createElement('div');
+            let desiredCommandInTerminal = possibleClipboard.getAttribute("title").replace("aptible ", "").trim()
+
+            // if it's an operation and ongoing, change it to follow
+            if (desiredCommandInTerminal.includes("operation:logs") &&
+                !Array.from(traverseParents(possibleClipboard, 3).querySelectorAll('div')).find((el) => el.textContent.includes("DONE"))) {
+                desiredCommandInTerminal = desiredCommandInTerminal.replace("operation:logs", "operation:follow")
+            }
+
+            // update the element and set
+            runInCodeElement.innerHTML = `<div class="ml-2" onclick="openTerminalAndRunCommand('${desiredCommandInTerminal}')">
+    <svg viewBox="0 0 24 24" width="16" height="16" stroke="#888C90" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cursor-pointer">
+        <title>Run in CLI</title>
+        <polyline points="4 17 10 11 4 5"/>
+        <line x1="12" y1="19" x2="20" y2="19"/>
+    </svg>
+</div>`
+            possibleClipboard.classList.add("mutated-for-desktop-app")
+            possibleClipboard.parentElement.append(runInCodeElement)
+        }
+    })
+}
+const observer = new MutationObserver(callback);
+observer.observe(document.getElementById("app"), {
+    childList: true,
+    subtree: true,
+});
+
 // MAIN LOOP
-getKeys();
 showLoadingIndicator();
 (async () => {
-    await waitFor({
-        func: () => initialFetchedKeys === true,
-    });
-    startTerminal();
+    await startTerminal();
     hideLoadingIndicator();
 })();

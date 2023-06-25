@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
@@ -67,6 +68,36 @@ func printEndpointsIfInServiceEndpoints(endpoint aptible.Endpoint, services []ap
 	}
 }
 
+func GenEndpointsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "endpoints:list",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:  "app",
+					Usage: "Specify an app to run your endpoints:list command on",
+				},
+				&cli.StringFlag{
+					Name:  "database",
+					Usage: "Specify a database to run your endpoints:list command on",
+				},
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your endpoints:list command on",
+				},
+			},
+			Usage: "This command lists all Endpoints.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListEndpoints(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
+
 func (c *Config) ListEndpoints(ctx *cli.Context) error {
 	var err error
 	var app aptible.App
@@ -85,13 +116,8 @@ func (c *Config) ListEndpoints(ctx *cli.Context) error {
 		}
 	}
 
-	dbId := ctx.Value("database").(int64)
-	if dbId != 0 {
-		db, err = c.client.GetDatabase(dbId)
-		if err != nil {
-			return err
-		}
-	}
+	// ignore error if none
+	dbId, _ := c.getDatabaseIDFromFlags(ctx)
 
 	for _, env := range envs {
 		endpoints, err := c.client.GetEndpoints(env.ID)
@@ -102,9 +128,9 @@ func (c *Config) ListEndpoints(ctx *cli.Context) error {
 			continue
 		}
 
-		if app.ID != 0 && app.EnvironmentID == env.ID ||
-			db.ID != 0 && db.EnvironmentID == env.ID ||
-			app.ID == 0 && db.ID == 0 {
+		if (app.ID != 0 && app.EnvironmentID == env.ID) ||
+			(dbId != 0 && db.EnvironmentID == env.ID) ||
+			(app.ID == 0 && dbId == 0) {
 			fmt.Printf("=== %s\n", env.Handle)
 		}
 		for _, endpoint := range endpoints {

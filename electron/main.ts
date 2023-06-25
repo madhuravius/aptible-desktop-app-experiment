@@ -1,8 +1,7 @@
-import {app, BrowserWindow, ipcMain, Menu, nativeImage, Tray} from "electron";
-import {exec, spawn} from "child_process";
+import {app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, shell, Tray} from "electron";
+import {spawn} from "child_process";
 import remoteMain from '@electron/remote/main';
 import path from "path";
-import {readFileSync} from "fs";
 
 // global garb to prevent gcing and losing
 let mainWindow;
@@ -31,12 +30,11 @@ app.on("before-quit", function () {
 // needed for remote module execution (preload.ts)
 remoteMain.initialize();
 app.whenReady().then(() => {
-
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
 
     const splash = new BrowserWindow({
-        width: 330,
-        height: 80,
+        width: 800,
+        height: 800,
         icon: iconPath,
         transparent: true,
         frame: false,
@@ -64,96 +62,64 @@ app.whenReady().then(() => {
         splash.loadFile("splash.html");
     }
 
-    setTimeout(() => {
+    // disable reloads
+    globalShortcut.register('CommandOrControl+R', () => {});
+    globalShortcut.register('F5', () => {});
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    } else {
+        // Load your file
+        mainWindow.loadFile("index.html");
+    }
+
+    mainWindow.webContents.on('did-finish-load', () => {
         splash.destroy();
         mainWindow.show();
+    })
 
-        if (process.env.VITE_DEV_SERVER_URL) {
-            mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-        } else {
-            // Load your file
-            mainWindow.loadFile("index.html");
-        }
+    // BEGIN TRAY-RELATED
+    // add desktop app-specific code (ex: terminal)
+    mainWindow.on("minimize", function (event) {
+        event.preventDefault();
+        mainWindow.hide();
+    });
 
-        // BEGIN TRAY-RELATED
-        // add desktop app-specific code (ex: terminal)
-        mainWindow.on("minimize", function (event) {
+    mainWindow.on("close", function (event) {
+        if (!isQuitting) {
             event.preventDefault();
             mainWindow.hide();
-        });
-
-        mainWindow.on("close", function (event) {
-            if (!isQuitting) {
-                event.preventDefault();
-                mainWindow.hide();
-            }
-            return false;
-        });
-
-        tray.setContextMenu(
-            Menu.buildFromTemplate([
-                {
-                    label: "Show Aptible",
-                    click: function () {
-                        mainWindow.show();
-                    },
-                },
-                {
-                    label: "Quit",
-                    click: function () {
-                        isQuitting = true;
-                        app.quit();
-                    },
-                },
-            ]),
-        );
-        // END TRAY-RELATED
-    }, 1000);
-});
-
-// THIS WILL NEED TO BE REFACTORED TO ONLY QUERY ON DEMAND
-let keyData: {
-    [key: string]: {
-        privateKeyFilename: string;
-        publicKeyFilename: string;
-        privateKeyPath: string;
-        publicKeyPath: string;
-        privateKeyData: string;
-        publicKeyData: string;
-    }
-} = {};
-
-// key mounting adapted heavily from this example app:
-// https://github.com/bluprince13/ssh-key-manager/blob/master/public/electron.js
-ipcMain.on("request:keys", (_) => {
-    const sshdir = `${process.env.HOME}/.ssh`;
-    exec("ls -a " + sshdir, (err, stdout, _) => {
-        if (err) {
-            console.error(`exec error when getting ssh keys: ${err}`);
-            return;
         }
-
-        const filenames = stdout.split(/\r?\n/).slice(2);
-        filenames.pop();
-
-        filenames.forEach((filename) => {
-            if (filename.endsWith(".pub")) {
-                const publicKeyFilename = filename;
-                const privateKeyFilename = filename.split(".")[0];
-                const privateKeyPath = sshdir + "/" + privateKeyFilename;
-                const publicKeyPath = sshdir + "/" + publicKeyFilename;
-                keyData[publicKeyFilename] = {
-                    privateKeyFilename,
-                    publicKeyFilename,
-                    privateKeyPath,
-                    publicKeyPath,
-                    privateKeyData: readFileSync(privateKeyPath, 'utf-8'),
-                    publicKeyData: readFileSync(publicKeyPath, 'utf-8'),
-                };
-            }
-        })
-        mainWindow.webContents.send("received:keys", true);
+        return false;
     });
+
+    // taken from: https://stackoverflow.com/a/32415579
+    // when external links, send them to browser
+    mainWindow.webContents.on('will-navigate', async function (e, url) {
+        if (url != mainWindow.webContents.getURL()) {
+            e.preventDefault()
+            await shell.openExternal(url)
+        }
+    });
+
+    tray.setContextMenu(
+        Menu.buildFromTemplate([
+            {
+                label: "Show Aptible",
+                click: function () {
+                    mainWindow.show();
+                },
+            },
+            {
+                label: "Quit",
+                click: function () {
+                    isQuitting = true;
+                    app.quit();
+                },
+            },
+        ]),
+    );
+    // END TRAY-RELATED
 });
 
 ipcMain.on("request:cli_command", (_, {cliArgs}) => {

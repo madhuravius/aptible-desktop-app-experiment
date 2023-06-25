@@ -2,9 +2,32 @@ package internal
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/urfave/cli/v2"
 )
+
+func GenMetricDrainsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "metric_drain:list",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your metric_drain:list command on",
+				},
+			},
+			Usage: "This command lists all Metric Drains.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListMetricDrains(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
 
 func (c *Config) ListMetricDrains(ctx *cli.Context) error {
 	var err error

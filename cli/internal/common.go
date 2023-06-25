@@ -3,8 +3,10 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aptible/go-deploy/aptible"
@@ -28,6 +30,14 @@ type Config struct {
 	apiHost       string
 	sshPath       string
 	sshKeygenPath string
+}
+
+func NewConfigF(ctx *cli.Context) *Config {
+	c, err := NewConfig(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return c
 }
 
 func NewConfig(ctx *cli.Context) (*Config, error) {
@@ -62,9 +72,67 @@ func Client(token, apiHost string) (*aptible.Client, error) {
 	return client, err
 }
 
+func (c *Config) getDatabaseIDFromFlags(ctx *cli.Context) (int64, error) {
+	rawDbIdOrHandle := ctx.Value("database").(string)
+	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+		envs, envsErr := c.client.GetEnvironments()
+		if envsErr != nil {
+			return 0, fmt.Errorf("could not query environments to get databaseId from handle: %s", err.Error())
+		}
+		for _, env := range envs {
+			dbs, dbsErr := c.client.GetDatabases(env.ID)
+			if dbsErr != nil {
+				return 0, fmt.Errorf("could not query databases to get databaseId from handle: %s", err.Error())
+			}
+			for _, db := range dbs {
+				if db.Handle == rawDbIdOrHandle {
+					return db.ID, nil
+				}
+			}
+		}
+	} else {
+		return dbId, nil
+	}
+	return 0, fmt.Errorf("specified database does not exist: %s", rawDbIdOrHandle)
+}
+
+func (c *Config) getDatabasesFromFlags(ctx *cli.Context) ([]aptible.Database, error) {
+	rawDbIdOrHandle := ctx.Value("database").(string)
+
+	// if there is an error, we will skip it as we defer to whatever list is provided instead
+	var dbs []aptible.Database
+	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+		db, err := c.client.GetDatabase(dbId)
+		if err != nil {
+			return nil, err
+		}
+		dbs = []aptible.Database{db}
+	} else {
+		envs, err := c.getEnvironmentsFromFlags(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, env := range envs {
+			dbResults, dbsErr := c.client.GetDatabases(env.ID)
+			if dbsErr != nil {
+				return nil, fmt.Errorf("could not query databases to collect for environment: %s", err.Error())
+			}
+			for _, db := range dbResults {
+				dbs = append(dbs, db)
+			}
+		}
+	}
+
+	return dbs, nil
+}
+
 func (c *Config) getEnvironmentsFromFlags(ctx *cli.Context) ([]aptible.Environment, error) {
 	var err error
-	environmentId := ctx.Value("environment").(int64)
+
+	// if there is an error, we will skip it as we defer to whatever list is provided instead
+	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
+
 	var envs []aptible.Environment
 	if environmentId != 0 {
 		environment, err := c.client.GetEnvironment(environmentId)
@@ -104,4 +172,22 @@ func CheckHostPortAccessible(host, port string) error {
 	}
 
 	return nil
+}
+
+func (c *Config) getEnvironmentIDFromFlags(ctx *cli.Context) (int64, error) {
+	rawEnvIdOrHandle := ctx.Value("environment").(string)
+	if envId, err := strconv.ParseInt(rawEnvIdOrHandle, 10, 64); err != nil {
+		envs, envsErr := c.client.GetEnvironments()
+		if envsErr != nil {
+			return 0, fmt.Errorf("could not query environments to get environmentId: %s", err.Error())
+		}
+		for _, env := range envs {
+			if env.Handle == rawEnvIdOrHandle {
+				return env.ID, nil
+			}
+		}
+	} else {
+		return envId, nil
+	}
+	return 0, fmt.Errorf("specified environment does not exist: %s", rawEnvIdOrHandle)
 }

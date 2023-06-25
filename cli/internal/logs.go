@@ -3,26 +3,50 @@ package internal
 import (
 	"errors"
 	"github.com/aptible/go-deploy/aptible"
+	"log"
 
 	"github.com/urfave/cli/v2"
 )
 
+func GenLogsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "logs",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your logs command on",
+				},
+				&cli.Int64Flag{
+					Name:  "app",
+					Usage: "Specify an app to run your logs command on",
+				},
+				&cli.StringFlag{
+					Name:  "database",
+					Usage: "Specify an database to run your logs command on",
+				},
+			},
+			Usage: "This command lets you access real-time logs for an App or Database.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.Logs(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
+
 func (c *Config) Logs(ctx *cli.Context) error {
 	var err error
 	appId := ctx.Value("app").(int64)
-	dbId := ctx.Value("database").(int64)
-	environmentId := ctx.Value("environment").(int64)
+
+	dbId, _ := c.getDatabaseIDFromFlags(ctx)
+	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
 
 	if appId == 0 && dbId == 0 {
 		return errors.New("error - neither app nor database ids were provided, cannot continue")
-	}
-
-	if environmentId != 0 {
-		// doesn't get used unless flag is passed in
-		_, err = c.client.GetEnvironment(environmentId)
-		if err != nil {
-			return err
-		}
 	}
 
 	var op aptible.Operation

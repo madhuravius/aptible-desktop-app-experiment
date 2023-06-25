@@ -2,9 +2,32 @@ package internal
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/urfave/cli/v2"
 )
+
+func GenDatabaseCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "db:list",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your db:list command on",
+				},
+			},
+			Usage: "This command lists Databases in an Environment.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListDatabases(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
 
 func (c *Config) ListDatabases(ctx *cli.Context) error {
 	envs, err := c.getEnvironmentsFromFlags(ctx)

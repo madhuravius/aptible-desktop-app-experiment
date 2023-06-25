@@ -1,6 +1,6 @@
 appId: com.aptible.aptible-desktop-app
 includeSubNodeModules: true
-productName: aptible-desktop-app
+productName: Aptible
 directories:
   buildResources: build
   output: release
