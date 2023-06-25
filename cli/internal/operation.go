@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aptible/go-deploy/aptible"
+	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/urfave/cli/v2"
@@ -71,6 +73,65 @@ func (c *Config) OperationFollow(ctx *cli.Context) error {
 	if err = c.attachToOperationLogs(op); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (c *Config) OperationLogs(ctx *cli.Context) error {
+	if len(ctx.Args().Slice()) == 0 {
+		return errors.New("missing operation id argument to continue")
+	}
+
+	opIdRaw := ctx.Args().Get(0)
+	opId, err := strconv.ParseInt(opIdRaw, 10, 64)
+	if err != nil {
+		return err
+	}
+	if opId == 0 {
+		return errors.New("missing operation id argument to continue")
+	}
+
+	op, err := c.client.GetOperation(opId)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/operations/%d/logs", c.apiHost, op.ID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	reqLogs, err := http.NewRequest("GET", string(body), nil)
+	if err != nil {
+		return err
+	}
+
+	respLogs, err := client.Do(reqLogs)
+	if err != nil {
+		return err
+	}
+
+	logsBody, err := io.ReadAll(respLogs.Body)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(logsBody))
 
 	return nil
 }
