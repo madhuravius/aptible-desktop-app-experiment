@@ -1,4 +1,3 @@
-let initialFetchedKeys = false;
 let term;
 let termActivity = false;
 let fitAddon;
@@ -260,7 +259,7 @@ const unshiftLoadingIndicatorForScroll = () => {
 
 const reconcileLoadingIndicatorWithScroll = () => {
     // if scroll height exceeds a certain value, adjust margin of loader
-    if (!terminalElement.classList.contains("hidden")) {
+    if (!terminalElement.classList.contains("hidden") && term?._core?.viewport?._activeBuffer) {
         if (term._core.viewport._activeBuffer.lines.length > term._core.viewport._activeBuffer._rows) {
             shiftLoadingIndicatorForScroll()
         } else {
@@ -378,9 +377,6 @@ observer.observe(document.getElementById("app"), {
 // MAIN LOOP
 showLoadingIndicator();
 (async () => {
-    await waitFor({
-        func: () => initialFetchedKeys === true,
-    });
-    startTerminal();
+    await startTerminal();
     hideLoadingIndicator();
 })();
