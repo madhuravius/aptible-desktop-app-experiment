@@ -216,7 +216,7 @@ const startTerminal = async () => {
             currLine = "";
             lastPositionInHistory = entries.length - 1;
         } else if (key === '\u007F') { // hitting delete
-            if (term._core.buffer.x > 2 && currLine) {
+            if (term._core.buffer.x > 3 && currLine) {
                 term.write("\b \b")
                 currLine = currLine.slice(0, currLine.length - 1)
             } else {
