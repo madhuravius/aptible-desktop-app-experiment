@@ -127,8 +127,8 @@ const startTerminal = async () => {
     fitAddon = fitAddonToSet;
 
     let currLine = "";
-    let lastPositionInHistory = 0;
     const entries = JSON.parse(localStorage.getItem(terminalEntriesKey) || '[]');
+    let lastPositionInHistory = entries.length > 0 ? entries.length - 1 : 0;
 
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
@@ -208,8 +208,17 @@ const startTerminal = async () => {
             if (term._core.buffer.x > 3 && currLine) {
                 term.write("\b \b")
                 currLine = currLine.slice(0, currLine.length - 1)
-            } else {
-
+            }
+        } else if (key === '\x1B\x7F') {
+            if (term._core.buffer.x > 3 && currLine) {
+                const words = currLine
+                    .split(" ")
+                    .map((word) => !!word ? word : null)
+                    .filter((word) => !!word); // drop empty spaces
+                let wordLength = words.at(-1).length; // adding
+                if (words.length > 1) wordLength += 1; // account for extra space except start (which always has one)
+                term.write('\b \b'.repeat(wordLength))
+                currLine = currLine.substring(0, currLine.length - wordLength)
             }
         } else {
             currLine += key;

@@ -21,7 +21,7 @@ func GenLogsCommands() []*cli.Command {
 					Name:  "app",
 					Usage: "Specify an app to run your logs command on",
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "database",
 					Usage: "Specify an database to run your logs command on",
 				},
@@ -41,19 +41,12 @@ func GenLogsCommands() []*cli.Command {
 func (c *Config) Logs(ctx *cli.Context) error {
 	var err error
 	appId := ctx.Value("app").(int64)
-	dbId := ctx.Value("database").(int64)
-	environmentId := ctx.Value("environment").(int64)
+
+	dbId, _ := c.getDatabaseIDFromFlags(ctx)
+	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
 
 	if appId == 0 && dbId == 0 {
 		return errors.New("error - neither app nor database ids were provided, cannot continue")
-	}
-
-	if environmentId != 0 {
-		// doesn't get used unless flag is passed in
-		_, err = c.client.GetEnvironment(environmentId)
-		if err != nil {
-			return err
-		}
 	}
 
 	var op aptible.Operation

@@ -77,7 +77,7 @@ func GenEndpointsCommands() []*cli.Command {
 					Name:  "app",
 					Usage: "Specify an app to run your endpoints:list command on",
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "database",
 					Usage: "Specify a database to run your endpoints:list command on",
 				},
@@ -116,13 +116,8 @@ func (c *Config) ListEndpoints(ctx *cli.Context) error {
 		}
 	}
 
-	dbId := ctx.Value("database").(int64)
-	if dbId != 0 {
-		db, err = c.client.GetDatabase(dbId)
-		if err != nil {
-			return err
-		}
-	}
+	// ignore error if none
+	dbId, _ := c.getDatabaseIDFromFlags(ctx)
 
 	for _, env := range envs {
 		endpoints, err := c.client.GetEndpoints(env.ID)
@@ -133,9 +128,9 @@ func (c *Config) ListEndpoints(ctx *cli.Context) error {
 			continue
 		}
 
-		if app.ID != 0 && app.EnvironmentID == env.ID ||
-			db.ID != 0 && db.EnvironmentID == env.ID ||
-			app.ID == 0 && db.ID == 0 {
+		if (app.ID != 0 && app.EnvironmentID == env.ID) ||
+			(dbId != 0 && db.EnvironmentID == env.ID) ||
+			(app.ID == 0 && dbId == 0) {
 			fmt.Printf("=== %s\n", env.Handle)
 		}
 		for _, endpoint := range endpoints {

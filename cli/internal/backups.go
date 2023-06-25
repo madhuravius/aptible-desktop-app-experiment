@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
 )
 
@@ -29,7 +28,7 @@ func GenBackupsCommands() []*cli.Command {
 					Name:  "environment",
 					Usage: "Specify an environment to run your backup:list command on",
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "database",
 					Usage: "Specify an database to run your backup:list command on",
 				},
@@ -47,34 +46,11 @@ func GenBackupsCommands() []*cli.Command {
 }
 
 func (c *Config) ListBackups(ctx *cli.Context) error {
-	var envs []aptible.Environment
 	var err error
 
-	envs, err = c.getEnvironmentsFromFlags(ctx)
+	dbs, err := c.getDatabasesFromFlags(ctx)
 	if err != nil {
 		return err
-	}
-
-	dbId := ctx.Value("database").(int64)
-
-	var dbs []aptible.Database
-	if dbId != 0 {
-		db, err := c.client.GetDatabase(dbId)
-		if err != nil {
-			return err
-		}
-		dbs = []aptible.Database{db}
-	} else {
-		for _, env := range envs {
-			dbsInEnv, err := c.client.GetDatabases(env.ID)
-			if err != nil {
-				return err
-			}
-			if len(dbsInEnv) == 0 {
-				continue
-			}
-			dbs = append(dbs, dbsInEnv...)
-		}
 	}
 
 	for _, db := range dbs {
