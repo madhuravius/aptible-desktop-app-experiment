@@ -2,9 +2,33 @@ package internal
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/urfave/cli/v2"
 )
+
+func GenLogDrainsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "log_drain:list",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:  "environment",
+					Value: 0,
+					Usage: "Specify an environment to run your log_drain:list command on",
+				},
+			},
+			Usage: "This command lists all Log Drains.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListLogDrains(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
 
 func (c *Config) ListLogDrains(ctx *cli.Context) error {
 	var err error

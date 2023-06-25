@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aptible/go-deploy/aptible"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -40,6 +41,33 @@ func (c *Config) attachToOperationLogs(op aptible.Operation) error {
 	}
 
 	return nil
+}
+
+func GenOperationsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name:  "operation:follow",
+			Usage: "This command follows the logs of a running Operation.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.OperationFollow(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+		{
+			Name:  "operation:logs",
+			Usage: "This command displays logs for a given Operation.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.OperationFollow(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
 }
 
 func (c *Config) OperationFollow(ctx *cli.Context) error {

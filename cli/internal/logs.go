@@ -3,9 +3,43 @@ package internal
 import (
 	"errors"
 	"github.com/aptible/go-deploy/aptible"
+	"log"
 
 	"github.com/urfave/cli/v2"
 )
+
+func GenLogsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "logs",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:  "environment",
+					Value: 0,
+					Usage: "Specify an environment to run your logs command on",
+				},
+				&cli.Int64Flag{
+					Name:  "app",
+					Value: 0,
+					Usage: "Specify an app to run your logs command on",
+				},
+				&cli.Int64Flag{
+					Name:  "database",
+					Value: 0,
+					Usage: "Specify an database to run your logs command on",
+				},
+			},
+			Usage: "This command lets you access real-time logs for an App or Database.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.Logs(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
+}
 
 func (c *Config) Logs(ctx *cli.Context) error {
 	var err error

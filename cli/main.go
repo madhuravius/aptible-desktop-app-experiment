@@ -28,243 +28,38 @@ const desc = `aptible is a command line interface to the Aptible.com platform.
 It allows users to manage authentication, application launch, deployment, logging, and more.
 To read more, use the docs command to view Aptible's help on the web.`
 
-func genConfig(ctx *cli.Context) *internal.Config {
-	c, err := internal.NewConfig(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return c
+var generalCommands = []*cli.Command{
+	{
+		Name:  "about",
+		Usage: "print some information about the CLI aptible CLI",
+		Action: func(_ *cli.Context) error {
+			fmt.Printf("%s\n%s\n", logo, desc)
+			return nil
+		},
+	},
 }
 
 func main() {
+	var commands = []*cli.Command{}
+	for _, commandGroup := range [][]*cli.Command{
+		generalCommands,
+		internal.GenAppCommands(),
+		internal.GenBackupsCommands(),
+		internal.GenConfigCommands(),
+		internal.GenDatabaseCommands(),
+		internal.GenEndpointsCommands(),
+		internal.GenLogsCommands(),
+		internal.GenLogDrainsCommands(),
+		internal.GenMetricDrainsCommands(),
+		internal.GenOperationsCommands(),
+	} {
+		commands = append(commands, commandGroup...)
+	}
+
 	app := &cli.App{
-		Name:  "aptible",
-		Usage: "aptible cli",
-		Commands: []*cli.Command{
-			{
-				Name:  "about",
-				Usage: "print some information about the CLI aptible CLI",
-				Action: func(_ *cli.Context) error {
-					fmt.Printf("%s\n%s\n", logo, desc)
-					return nil
-				},
-			},
-			{
-				Name: "apps",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your apps:list command on",
-					},
-				},
-				Usage: "This command lists Apps in an Environment.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListApps(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "backup:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your backup:list command on",
-					},
-					&cli.Int64Flag{
-						Name:  "database",
-						Value: 0,
-						Usage: "Specify an database to run your backup:list command on",
-					},
-				},
-				Usage: "This command lists all Database Backups for a given Database.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListBackups(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "config",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:     "app",
-						Value:    0,
-						Required: true,
-						Usage:    "Specify an app to run your config command on",
-					},
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your apps:list command on",
-					},
-				},
-				Usage: "This command prints an App's Configuration variables.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.GetConfiguration(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "db:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your db:list command on",
-					},
-				},
-				Usage: "This command lists Databases in an Environment.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListDatabases(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "endpoints:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "app",
-						Value: 0,
-						Usage: "Specify an app to run your endpoints:list command on",
-					},
-					&cli.Int64Flag{
-						Name:  "database",
-						Value: 0,
-						Usage: "Specify a database to run your endpoints:list command on",
-					},
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your endpoints:list command on",
-					},
-				},
-				Usage: "This command lists all Endpoints.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListEndpoints(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "environment:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your environment:list command on",
-					},
-				},
-				Usage: "This command lists all Environments.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListEnvironments(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "log_drain:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your log_drain:list command on",
-					},
-				},
-				Usage: "This command lists all Log Drains.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListLogDrains(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "metric_drain:list",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your metric_drain:list command on",
-					},
-				},
-				Usage: "This command lists all Metric Drains.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.ListMetricDrains(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "operation:follow",
-				Usage: "This command follows the logs of a running Operation.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.OperationFollow(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "operation:logs",
-				Usage: "This command displays logs for a given Operation.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.OperationLogs(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-			{
-				Name: "logs",
-				Flags: []cli.Flag{
-					&cli.Int64Flag{
-						Name:  "environment",
-						Value: 0,
-						Usage: "Specify an environment to run your logs command on",
-					},
-					&cli.Int64Flag{
-						Name:  "app",
-						Value: 0,
-						Usage: "Specify an app to run your logs command on",
-					},
-					&cli.Int64Flag{
-						Name:  "database",
-						Value: 0,
-						Usage: "Specify an database to run your logs command on",
-					},
-				},
-				Usage: "This command lets you access real-time logs for an App or Database.",
-				Action: func(ctx *cli.Context) error {
-					c := genConfig(ctx)
-					if err := c.Logs(ctx); err != nil {
-						log.Fatal(err)
-					}
-					return nil
-				},
-			},
-		},
+		Name:     "aptible",
+		Usage:    "aptible cli",
+		Commands: commands,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "token",

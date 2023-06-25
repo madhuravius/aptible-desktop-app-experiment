@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aptible/go-deploy/aptible"
@@ -17,6 +18,34 @@ func translateDateToBackupStdOut(date string) (string, error) {
 	}
 
 	return parsedDate.Format("2006-01-02 15:04:05 UTC"), nil
+}
+
+func GenBackupsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "backup:list",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:  "environment",
+					Value: 0,
+					Usage: "Specify an environment to run your backup:list command on",
+				},
+				&cli.Int64Flag{
+					Name:  "database",
+					Value: 0,
+					Usage: "Specify an database to run your backup:list command on",
+				},
+			},
+			Usage: "This command lists all Database Backups for a given Database.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListBackups(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+	}
 }
 
 func (c *Config) ListBackups(ctx *cli.Context) error {

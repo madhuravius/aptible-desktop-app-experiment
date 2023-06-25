@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
@@ -64,6 +65,39 @@ func printEndpointsIfInServiceEndpoints(endpoint aptible.Endpoint, services []ap
 			continue
 		}
 		printEndpoint(endpoint)
+	}
+}
+
+func GenEndpointsCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name: "endpoints:list",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:  "app",
+					Value: 0,
+					Usage: "Specify an app to run your endpoints:list command on",
+				},
+				&cli.Int64Flag{
+					Name:  "database",
+					Value: 0,
+					Usage: "Specify a database to run your endpoints:list command on",
+				},
+				&cli.Int64Flag{
+					Name:  "environment",
+					Value: 0,
+					Usage: "Specify an environment to run your endpoints:list command on",
+				},
+			},
+			Usage: "This command lists all Endpoints.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ListEndpoints(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
 	}
 }
 

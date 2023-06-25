@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -28,6 +29,14 @@ type Config struct {
 	apiHost       string
 	sshPath       string
 	sshKeygenPath string
+}
+
+func NewConfigF(ctx *cli.Context) *Config {
+	c, err := NewConfig(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return c
 }
 
 func NewConfig(ctx *cli.Context) (*Config, error) {
