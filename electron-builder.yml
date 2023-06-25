@@ -26,6 +26,8 @@ files:
       - "**/*"
 asarUnpack:
   - dist/cli
+  - dist/ssh
+  - dist/ssh-keygen
 # afterSign: build/notarize.js
 win:
   executableName: aptible-desktop-app

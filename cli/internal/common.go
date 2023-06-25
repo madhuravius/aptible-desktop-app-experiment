@@ -23,23 +23,30 @@ var (
 )
 
 type Config struct {
-	client  *aptible.Client
-	token   string
-	apiHost string
+	client        *aptible.Client
+	token         string
+	apiHost       string
+	sshPath       string
+	sshKeygenPath string
 }
 
 func NewConfig(ctx *cli.Context) (*Config, error) {
 	token := ctx.Value("token").(string)
 	apiHost := ctx.Value("api-host").(string)
 
+	sshPath := os.Getenv("SSH_PATH")
+	sshKeygenPath := os.Getenv("SSH_KEYGEN_PATH")
+
 	client, err := Client(token, apiHost)
 	if err != nil {
 		return nil, err
 	}
 	return &Config{
-		client:  client,
-		token:   token,
-		apiHost: apiHost,
+		client:        client,
+		token:         token,
+		apiHost:       apiHost,
+		sshPath:       sshPath,
+		sshKeygenPath: sshKeygenPath,
 	}, nil
 }
 

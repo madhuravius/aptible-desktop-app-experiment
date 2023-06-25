@@ -8,14 +8,14 @@ import (
 	"os/exec"
 )
 
-func generatePublicPrivateKey() ([]byte, []byte, error) {
+func (c *Config) generatePublicPrivateKey() ([]byte, []byte, error) {
 	tmp, err := os.MkdirTemp("", "sshkeygen-data")
 	if err != nil {
 		return nil, nil, err
 	}
 	defer os.RemoveAll(tmp)
 
-	cmd := exec.Command("./public/ssh-keygen", "-t", "rsa", "-N", "", "-f", fmt.Sprintf("%s/id_rsa", tmp))
+	cmd := exec.Command(c.sshKeygenPath, "-t", "rsa", "-N", "", "-f", fmt.Sprintf("%s/id_rsa", tmp))
 	_, err = cmd.Output()
 	if err != nil {
 		return nil, nil, err
@@ -34,7 +34,7 @@ func generatePublicPrivateKey() ([]byte, []byte, error) {
 	return publicKey, privateKey, nil
 }
 
-func AptibleSSH(publicKey []byte, privateKey []byte, certString, host, hostKey, user, token string, port int64) error {
+func (c *Config) AptibleSSH(publicKey []byte, privateKey []byte, certString, host, hostKey, user, token string, port int64) error {
 	var err error
 
 	if err = CheckHostPortAccessible(host, fmt.Sprintf("%d", port)); err != nil {
@@ -67,7 +67,7 @@ func AptibleSSH(publicKey []byte, privateKey []byte, certString, host, hostKey, 
 	fmt.Println(tmp)
 
 	cmd := exec.Command(
-		"./public/ssh", fmt.Sprintf("%s@%s", user, host),
+		c.sshPath, fmt.Sprintf("%s@%s", user, host),
 		"-i", fmt.Sprintf("%s/id_rsa", tmp),
 		"-p", fmt.Sprintf("%d", port),
 		"-o", "TCPKeepAlive=yes",

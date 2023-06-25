@@ -5,11 +5,8 @@ import path from "path";
 import {readFileSync} from "fs";
 
 // global garb to prevent gcing and losing
-let cliBinaryPath;
 let mainWindow;
 let tray; // must be specified globally or will be gc
-let trayIconPath;
-let iconPath;
 // end of global garb
 
 // bad code in need of a better store
@@ -18,8 +15,13 @@ let messagesToSendToFrontend = [];
 
 let isQuitting = false;
 
-app.getPath("home");
+const sshPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/ssh") : path.join(__dirname, "../../app.asar.unpacked/ssh");
+const sshKeygenPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/ssh-keygen") : path.join(__dirname, "../../app.asar.unpacked/ssh-keygen");
+const cliBinaryPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/cli") : path.join(__dirname, "../../app.asar.unpacked/cli");
+const iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/icon.png") : path.join(__dirname, "../icon.png");
+const trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
 
+app.getPath("home");
 app.on("before-quit", function () {
     isQuitting = true;
 });
@@ -28,9 +30,7 @@ app.on("before-quit", function () {
 // needed for remote module execution (preload.ts)
 remoteMain.initialize();
 app.whenReady().then(() => {
-    cliBinaryPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/cli") : path.join(__dirname, "../../app.asar.unpacked/cli");
-    iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/icon.png") : path.join(__dirname, "../icon.png");
-    trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
+
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
 
     const splash = new BrowserWindow({
@@ -156,7 +156,11 @@ ipcMain.on("request:keys", (_) => {
 });
 
 ipcMain.on("request:cli_command", (_, {cliArgs}) => {
-    const activeProcess = spawn(cliBinaryPath, cliArgs);
+    const activeProcess = spawn(
+        cliBinaryPath,
+        cliArgs,
+        { env: { SSH_PATH: sshPath, SSH_KEYGEN_PATH: sshKeygenPath } }
+    );
     activeProcess.stdout.setEncoding('utf-8');
     activeProcess.stdout.on('data', (data) => messagesToSendToFrontend.push(data));
     activeProcess.stderr.setEncoding('utf-8');
