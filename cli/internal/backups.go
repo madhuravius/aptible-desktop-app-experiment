@@ -2,22 +2,9 @@ package internal
 
 import (
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/urfave/cli/v2"
+	"log"
 )
-
-func translateDateToBackupStdOut(date string) (string, error) {
-	// 2023-06-23T05:55:20.000Z - in
-	// 2023-05-25 05:01:07 UTC - out
-	parsedDate, err := time.Parse("2006-01-02T15:04:05.000Z", date)
-	if err != nil {
-		return "", err
-	}
-
-	return parsedDate.Format("2006-01-02 15:04:05 UTC"), nil
-}
 
 func GenBackupsCommands() []*cli.Command {
 	return []*cli.Command{
@@ -60,7 +47,7 @@ func (c *Config) ListBackups(ctx *cli.Context) error {
 		}
 
 		for _, backup := range backups {
-			date, err := translateDateToBackupStdOut(backup.CreatedAt)
+			date, err := translateDateToStdOut(backup.CreatedAt)
 			if err != nil {
 				return err
 			}

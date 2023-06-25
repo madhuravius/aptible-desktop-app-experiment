@@ -26,6 +26,72 @@ func GenDatabaseCommands() []*cli.Command {
 				return nil
 			},
 		},
+		{
+			Name: "db:backup",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your db:backup command on",
+				},
+				&cli.StringFlag{
+					Name:     "database",
+					Required: true,
+					Usage:    "Specify an app to run your db:backup command on",
+				},
+			},
+			Usage: "This command is used to create Database Backups.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.BackupDatabase(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+		{
+			Name: "db:deprovision",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your db:backup command on",
+				},
+				&cli.StringFlag{
+					Name:     "database",
+					Required: true,
+					Usage:    "Specify an app to run your db:backup command on",
+				},
+			},
+			Usage: "This command is used to deprovision a Database.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.DeprovisionDatabase(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
+		{
+			Name: "db:reload",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "environment",
+					Usage: "Specify an environment to run your db:backup command on",
+				},
+				&cli.StringFlag{
+					Name:     "database",
+					Required: true,
+					Usage:    "Specify an app to run your db:backup command on",
+				},
+			},
+			Usage: "This command reloads a Database by replacing the running Database Container with a new one.",
+			Action: func(ctx *cli.Context) error {
+				c := NewConfigF(ctx)
+				if err := c.ReloadDatabase(ctx); err != nil {
+					log.Fatal(err)
+				}
+				return nil
+			},
+		},
 	}
 }
 
@@ -52,19 +118,69 @@ func (c *Config) ListDatabases(ctx *cli.Context) error {
 	return nil
 }
 
-// backup
+func (c *Config) BackupDatabase(ctx *cli.Context) error {
+	dbId, err := c.getDatabaseIDFromFlags(ctx)
+	if err != nil {
+		return err
+	}
+
+	op, err := c.client.DatabaseOperation(dbId, "backup")
+	if err != nil {
+		return err
+	}
+
+	if err = c.attachToOperationLogs(op); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // clone
 
 // create
 
-// deprovision
+func (c *Config) DeprovisionDatabase(ctx *cli.Context) error {
+	dbId, err := c.getDatabaseIDFromFlags(ctx)
+	if err != nil {
+		return err
+	}
+
+	op, err := c.client.DatabaseOperation(dbId, "deprovision")
+	if err != nil {
+		return err
+	}
+
+	if err = c.attachToOperationLogs(op); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // dump
 
 // execute
 
 // reload
+
+func (c *Config) ReloadDatabase(ctx *cli.Context) error {
+	dbId, err := c.getDatabaseIDFromFlags(ctx)
+	if err != nil {
+		return err
+	}
+
+	op, err := c.client.DatabaseOperation(dbId, "reload")
+	if err != nil {
+		return err
+	}
+
+	if err = c.attachToOperationLogs(op); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // rename
 

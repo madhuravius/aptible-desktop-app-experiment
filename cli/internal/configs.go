@@ -2,7 +2,6 @@ package internal
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 
@@ -14,9 +13,8 @@ func GenConfigCommands() []*cli.Command {
 		{
 			Name: "config",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:     "app",
-					Value:    0,
 					Required: true,
 					Usage:    "Specify an app to run your config command on",
 				},
@@ -40,9 +38,7 @@ func GenConfigCommands() []*cli.Command {
 func (c *Config) GetConfiguration(ctx *cli.Context) error {
 	var err error
 
-	appId := ctx.Value("app").(int64)
-
-	environmentId, err := c.getEnvironmentIDFromFlags(ctx)
+	appId, err := c.getAppIDFromFlags(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,17 +46,6 @@ func (c *Config) GetConfiguration(ctx *cli.Context) error {
 	app, err := c.client.GetApp(appId)
 	if err != nil {
 		return err
-	}
-
-	if environmentId != 0 {
-		environment, err := c.client.GetEnvironment(environmentId)
-		if err != nil {
-			return err
-		}
-
-		if app.EnvironmentID != environment.ID {
-			return errors.New("error - app's environment and environment param do not match")
-		}
 	}
 
 	if app.Env != nil {

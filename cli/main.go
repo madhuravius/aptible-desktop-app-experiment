@@ -31,9 +31,17 @@ To read more, use the docs command to view Aptible's help on the web.`
 var generalCommands = []*cli.Command{
 	{
 		Name:  "about",
-		Usage: "print some information about the CLI aptible CLI",
+		Usage: "Print some information about the CLI aptible CLI",
 		Action: func(_ *cli.Context) error {
 			fmt.Printf("%s\n%s\n", logo, desc)
+			return nil
+		},
+	},
+	{
+		Name:  "version",
+		Usage: "This command prints the version of the Aptible CLI running.\n\n",
+		Action: func(_ *cli.Context) error {
+			fmt.Println("aptible-cli v1.0.0")
 			return nil
 		},
 	},
