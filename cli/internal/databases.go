@@ -2,39 +2,20 @@ package internal
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
 )
 
-func ListDatabases(cCtx *cli.Context) {
-	var err error
-	client, err := Client(cCtx)
+func (c *Config) ListDatabases(ctx *cli.Context) error {
+	envs, err := c.getEnvironmentsFromFlags(ctx)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	environmentId := cCtx.Value("environment").(int64)
-	var envs []aptible.Environment
-	if environmentId > 0 {
-		environment, err := client.GetEnvironment(environmentId)
-		if err != nil {
-			log.Fatal(err)
-		}
-		envs = []aptible.Environment{environment}
-		fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
-	} else {
-		envs, err = client.GetEnvironments()
-		if err != nil {
-			log.Fatal(err)
-		}
+		return err
 	}
 
 	for _, env := range envs {
-		dbs, err := client.GetDatabases(env.ID)
+		dbs, err := c.client.GetDatabases(env.ID)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if len(dbs) == 0 {
 			continue
@@ -45,4 +26,31 @@ func ListDatabases(cCtx *cli.Context) {
 			fmt.Println(db.Handle)
 		}
 	}
+	return nil
 }
+
+// backup
+
+// clone
+
+// create
+
+// deprovision
+
+// dump
+
+// execute
+
+// reload
+
+// rename
+
+// replicate
+
+// restart
+
+// tunnel
+
+// url
+
+// versions

@@ -26,8 +26,8 @@ rm -rf tmp
 
 echo "Setting up dependencies"
 yarn
-yarn add vite-plugin-electron
-yarn add -D electron-builder electron
+yarn add vite-plugin-electron crypto text-encoding-polyfill
+yarn add -D electron-builder electron "@electron/remote"@latest
 
 # electron does not support browser router, so we'll need to switch to memory router for that
 # sed on mac does not allow overwriting in place easily, so just copy it to tmp and overwrite
@@ -37,8 +37,6 @@ sed -i '' -e 's/createBrowserRouter/createMemoryRouter/g' ./src/app/router.tsx
 for pathToEdit in database-types language-types resource-types; do
     find ./src -type f -exec sed -i '' -e "s|/$pathToEdit|$pathToEdit|g" {} +
 done
-
-mv ./src/app/router-tmp.tsx ./src/app/router.tsx
 
 echo "Setting up package.json properly for use"
 npm pkg set 'main'="dist-electron/main.js"
