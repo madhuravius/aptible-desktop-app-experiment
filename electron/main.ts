@@ -74,9 +74,11 @@ app.whenReady().then(() => {
     }
 
     mainWindow.webContents.on('did-finish-load', () => {
-        splash.destroy();
-        mainWindow.maximize();
-        mainWindow.show();
+        setTimeout(() => {
+            splash.destroy();
+            mainWindow.maximize();
+            mainWindow.show();
+        }, 500);
     })
 
     // BEGIN TRAY-RELATED
