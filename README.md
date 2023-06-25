@@ -34,3 +34,11 @@ To generate images from pngs:
 cd build
 sips -s format icns icon.png --out icon.icns
 ```
+
+To view contents of asar files and what actually gets in there (vs not) - it will be in `asarout` directory below:
+
+```sh
+npx asar extract release/mac-arm64/Aptible.app/Contents/Resources/app.asar asarout
+```
+
+Similarly, check electron-builder.yml, as some files will need to be placed OUTSIDE the asar pack to be usable.
