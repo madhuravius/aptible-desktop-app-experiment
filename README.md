@@ -4,7 +4,6 @@ Catch-all aptible application that contains:
 
 * CLI
 * Electron app that will pull the latest UI
-* Bundled WASM embed on the electron app
 
 ## Requirements
 
@@ -14,19 +13,17 @@ Catch-all aptible application that contains:
 
 ## Running it locally
 
-To run
+To run with shell scripts (also see Makefile)
 
 ```sh
-./refresh.sh
+./scripts/refresh.sh
+./scripts/install-cli.sh
 
-yarn 
-
-# to start and run local
+# local and test in dev server
 yarn start
 
-# to build
-yarn dist
-npx electron-builder
+# dist and look in releases directory for dist
+rm -rf release && yarn build && npx electron-builder
 ```
 
 ## Misc
@@ -36,10 +33,4 @@ To generate images from pngs:
 ```sh
 cd build
 sips -s format icns icon.png --out icon.icns
-```
-
-To generate `wasm_exec.js` for your go version:
-
-```sh
-cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./public/wasm_exec.js
 ```
