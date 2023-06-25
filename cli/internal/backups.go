@@ -25,14 +25,12 @@ func GenBackupsCommands() []*cli.Command {
 		{
 			Name: "backup:list",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your backup:list command on",
 				},
 				&cli.Int64Flag{
 					Name:  "database",
-					Value: 0,
 					Usage: "Specify an database to run your backup:list command on",
 				},
 			},
@@ -52,7 +50,11 @@ func (c *Config) ListBackups(ctx *cli.Context) error {
 	var envs []aptible.Environment
 	var err error
 
-	environmentId := ctx.Value("environment").(int64)
+	envs, err = c.getEnvironmentsFromFlags(ctx)
+	if err != nil {
+		return err
+	}
+
 	dbId := ctx.Value("database").(int64)
 
 	var dbs []aptible.Database
@@ -63,18 +65,6 @@ func (c *Config) ListBackups(ctx *cli.Context) error {
 		}
 		dbs = []aptible.Database{db}
 	} else {
-		if environmentId != 0 {
-			environment, err := c.client.GetEnvironment(environmentId)
-			if err != nil {
-				return err
-			}
-			envs = []aptible.Environment{environment}
-		} else {
-			envs, err = c.client.GetEnvironments()
-			if err != nil {
-				return err
-			}
-		}
 		for _, env := range envs {
 			dbsInEnv, err := c.client.GetDatabases(env.ID)
 			if err != nil {

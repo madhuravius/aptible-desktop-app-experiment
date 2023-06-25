@@ -12,9 +12,8 @@ func GenAppCommands() []*cli.Command {
 		{
 			Name: "apps",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your apps:list command on",
 				},
 			},
@@ -34,19 +33,9 @@ func (c *Config) ListApps(ctx *cli.Context) error {
 	var envs []aptible.Environment
 	var err error
 
-	environmentId := ctx.Value("environment").(int64)
-
-	if environmentId != 0 {
-		environment, err := c.client.GetEnvironment(environmentId)
-		if err != nil {
-			return err
-		}
-		envs = []aptible.Environment{environment}
-	} else {
-		envs, err = c.client.GetEnvironments()
-		if err != nil {
-			return err
-		}
+	envs, err = c.getEnvironmentsFromFlags(ctx)
+	if err != nil {
+		return err
 	}
 
 	for _, env := range envs {

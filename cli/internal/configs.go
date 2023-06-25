@@ -20,9 +20,8 @@ func GenConfigCommands() []*cli.Command {
 					Required: true,
 					Usage:    "Specify an app to run your config command on",
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your apps:list command on",
 				},
 			},
@@ -42,7 +41,11 @@ func (c *Config) GetConfiguration(ctx *cli.Context) error {
 	var err error
 
 	appId := ctx.Value("app").(int64)
-	environmentId := ctx.Value("environment").(int64)
+
+	environmentId, err := c.getEnvironmentIDFromFlags(ctx)
+	if err != nil {
+		return err
+	}
 
 	app, err := c.client.GetApp(appId)
 	if err != nil {

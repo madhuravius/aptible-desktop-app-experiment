@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aptible/go-deploy/aptible"
@@ -73,7 +74,10 @@ func Client(token, apiHost string) (*aptible.Client, error) {
 
 func (c *Config) getEnvironmentsFromFlags(ctx *cli.Context) ([]aptible.Environment, error) {
 	var err error
-	environmentId := ctx.Value("environment").(int64)
+
+	// if there is an error, we will skip it as we defer to whatever list is provided instead
+	environmentId, _ := c.getEnvironmentIDFromFlags(ctx)
+
 	var envs []aptible.Environment
 	if environmentId != 0 {
 		environment, err := c.client.GetEnvironment(environmentId)
@@ -113,4 +117,22 @@ func CheckHostPortAccessible(host, port string) error {
 	}
 
 	return nil
+}
+
+func (c *Config) getEnvironmentIDFromFlags(ctx *cli.Context) (int64, error) {
+	rawEnvIdOrHandle := ctx.Value("environment").(string)
+	if envId, err := strconv.ParseInt(rawEnvIdOrHandle, 10, 64); err != nil {
+		envs, envsErr := c.client.GetEnvironments()
+		if envsErr != nil {
+			return 0, fmt.Errorf("could not query environments to get environmentId: %s", err.Error())
+		}
+		for _, env := range envs {
+			if env.Handle == rawEnvIdOrHandle {
+				return env.ID, nil
+			}
+		}
+	} else {
+		return envId, nil
+	}
+	return 0, fmt.Errorf("specified account does not exist: %s", rawEnvIdOrHandle)
 }

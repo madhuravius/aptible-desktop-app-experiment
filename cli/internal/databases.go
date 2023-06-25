@@ -12,9 +12,8 @@ func GenDatabaseCommands() []*cli.Command {
 		{
 			Name: "db:list",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your db:list command on",
 				},
 			},

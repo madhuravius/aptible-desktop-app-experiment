@@ -13,19 +13,16 @@ func GenLogsCommands() []*cli.Command {
 		{
 			Name: "logs",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your logs command on",
 				},
 				&cli.Int64Flag{
 					Name:  "app",
-					Value: 0,
 					Usage: "Specify an app to run your logs command on",
 				},
 				&cli.Int64Flag{
 					Name:  "database",
-					Value: 0,
 					Usage: "Specify an database to run your logs command on",
 				},
 			},

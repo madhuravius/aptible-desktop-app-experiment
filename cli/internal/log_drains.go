@@ -12,9 +12,8 @@ func GenLogDrainsCommands() []*cli.Command {
 		{
 			Name: "log_drain:list",
 			Flags: []cli.Flag{
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your log_drain:list command on",
 				},
 			},

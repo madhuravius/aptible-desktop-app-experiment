@@ -48,6 +48,7 @@ func main() {
 		internal.GenConfigCommands(),
 		internal.GenDatabaseCommands(),
 		internal.GenEndpointsCommands(),
+		internal.GenEnvironmentsCommands(),
 		internal.GenLogsCommands(),
 		internal.GenLogDrainsCommands(),
 		internal.GenMetricDrainsCommands(),

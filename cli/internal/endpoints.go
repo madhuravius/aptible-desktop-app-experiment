@@ -75,17 +75,14 @@ func GenEndpointsCommands() []*cli.Command {
 			Flags: []cli.Flag{
 				&cli.Int64Flag{
 					Name:  "app",
-					Value: 0,
 					Usage: "Specify an app to run your endpoints:list command on",
 				},
 				&cli.Int64Flag{
 					Name:  "database",
-					Value: 0,
 					Usage: "Specify a database to run your endpoints:list command on",
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:  "environment",
-					Value: 0,
 					Usage: "Specify an environment to run your endpoints:list command on",
 				},
 			},

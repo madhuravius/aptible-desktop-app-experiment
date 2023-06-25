@@ -1,10 +1,9 @@
 let initialFetchedKeys = false;
-let keys; // should be dropped from global state
 let term;
 let termActivity = false;
 let fitAddon;
 
-const terminalElement = document.getElementById("terminal")
+const terminalEntriesKey = "terminalEntries";
 
 const waitFor = async ({
                                 func, interval = 25, callback = () => {
@@ -129,7 +128,7 @@ const startTerminal = async () => {
 
     let currLine = "";
     let lastPositionInHistory = 0;
-    const entries = [];
+    const entries = JSON.parse(localStorage.getItem(terminalEntriesKey) || '[]');
 
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
@@ -216,6 +215,8 @@ const startTerminal = async () => {
             currLine += key;
             term.write(key);
         }
+
+        localStorage.setItem(terminalEntriesKey, JSON.stringify(entries))
     })
 }
 
@@ -227,6 +228,7 @@ setInterval(async () => {
 }, 1000)
 
 
+const terminalElement = document.getElementById("terminal")
 const appContainer = document.getElementById("electron-app-container");
 const toggleTerminalButton = document.getElementById("show-hide-terminal");
 const loadingIndicator = document.getElementById("loading-indicator");
