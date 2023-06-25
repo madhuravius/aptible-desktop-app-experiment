@@ -16,13 +16,17 @@
       #show-hide-terminal.half-right {
         right: 50%;
       }
+      #loading-indicator.overlaid {
+        filter: drop-shadow(0px 0px 5px rgb(0 0 0 / 0.5));
+      }
     </style>
   </head>
   <body>
+    <div id="loading-indicator" class="animate-spin-slow 5s fixed top-2 right-2 z-10 hidden"><svg viewBox="0 0 24 24" width="24" height="24" stroke="#FFCC66" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>Refresh Icon</title><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></div>
     <button 
       type="button" 
       id="show-hide-terminal" 
-      class="text-sm fixed top-2 right-0 mr-8 border border-gray-500 rounded-lg px-2 bg-gray-100 hidden">
+      class="text-sm fixed top-2 right-0 mr-10 border border-gray-500 rounded-lg px-2 bg-gray-100 hidden">
       <div class="flex">
         <span class="leading-4">
           ‹ Terminal <br />
@@ -34,10 +38,9 @@
     <div class="flex" id="electron-app-container">
       <div class="flex" id="app"></div>
     </div>
-    <div class="fixed right-0 top-0 px-5 w-1/2 h-screen hidden" id="terminal"></div>
+    <div class="fixed right-0 top-0 pl-5 w-1/2 h-screen hidden" id="terminal"></div>
     <script src="xterm.min.js"></script>
     <script src="xterm-addon-fit.min.js"></script>
-    <script src="wasm_exec.js"></script>
     <script src="terminal.js"></script>
     <script type="module" src="src/app/init.ts"></script>
     <script id="tuna">

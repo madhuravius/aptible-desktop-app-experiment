@@ -9,6 +9,7 @@ files:
     to: dist-electron
     filter:
       - main.js
+      - preload.js
   - from: .
     to: .
     filter:
@@ -23,6 +24,10 @@ files:
     to: .
     filter:
       - "**/*"
+asarUnpack:
+  - dist/cli
+  - dist/ssh
+  - dist/ssh-keygen
 # afterSign: build/notarize.js
 win:
   executableName: aptible-desktop-app

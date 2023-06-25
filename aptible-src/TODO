@@ -1,0 +1,11 @@
+# high severity
+
+- [ ] (getKeys()) this needs to be rewritten with a locker and some checkin awaitable checkout in the CLI flow itself
+- [ ] `webSecurity` needs to be enabled in electron configuration, this isn't ready yet
+- [ ] yubikey support needs to be done for ssh agent
+- [ ] on go-deploy client generation needs to be tweaked a little bit to avoid using env vars
+- [ ] add mount values for pub/private key too, this is hack (for cli, need to be able to read file paths)
+
+# moderate severity
+
+- [ ] Move all the stuff in terminal.js into here and use react or something else to populate this properly

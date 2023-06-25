@@ -2,39 +2,34 @@ package internal
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
 )
 
-func ListApps(cCtx *cli.Context) {
-	var err error
-	client, err := Client(cCtx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	environmentId := cCtx.Value("environment").(int64)
+func (c *Config) ListApps(ctx *cli.Context) error {
 	var envs []aptible.Environment
-	if environmentId > 0 {
-		environment, err := client.GetEnvironment(environmentId)
+	var err error
+
+	environmentId := ctx.Value("environment").(int64)
+
+	if environmentId != 0 {
+		environment, err := c.client.GetEnvironment(environmentId)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		envs = []aptible.Environment{environment}
-		fmt.Printf("Got environment successfully - %s (%d)\n", environment.Handle, environment.ID)
 	} else {
-		envs, err = client.GetEnvironments()
+		envs, err = c.client.GetEnvironments()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	for _, env := range envs {
-		apps, err := client.GetApps(env.ID)
+		apps, err := c.client.GetApps(env.ID)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if len(apps) == 0 {
 			continue
@@ -45,4 +40,15 @@ func ListApps(cCtx *cli.Context) {
 			fmt.Println(app.Handle)
 		}
 	}
+	return nil
 }
+
+// config
+
+// deploy
+
+// rebuild
+
+// restart
+
+// services
