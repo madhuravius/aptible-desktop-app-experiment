@@ -1,8 +1,7 @@
 import {app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, shell, Tray} from "electron";
-import {exec, spawn} from "child_process";
+import {spawn} from "child_process";
 import remoteMain from '@electron/remote/main';
 import path from "path";
-import {readFileSync} from "fs";
 
 // global garb to prevent gcing and losing
 let mainWindow;
@@ -121,51 +120,6 @@ app.whenReady().then(() => {
         ]),
     );
     // END TRAY-RELATED
-});
-
-// THIS WILL NEED TO BE REFACTORED TO ONLY QUERY ON DEMAND
-let keyData: {
-    [key: string]: {
-        privateKeyFilename: string;
-        publicKeyFilename: string;
-        privateKeyPath: string;
-        publicKeyPath: string;
-        privateKeyData: string;
-        publicKeyData: string;
-    }
-} = {};
-
-// key mounting adapted heavily from this example app:
-// https://github.com/bluprince13/ssh-key-manager/blob/master/public/electron.js
-ipcMain.on("request:keys", (_) => {
-    const sshdir = `${process.env.HOME}/.ssh`;
-    exec("ls -a " + sshdir, (err, stdout, _) => {
-        if (err) {
-            console.error(`exec error when getting ssh keys: ${err}`);
-            return;
-        }
-
-        const filenames = stdout.split(/\r?\n/).slice(2);
-        filenames.pop();
-
-        filenames.forEach((filename) => {
-            if (filename.endsWith(".pub")) {
-                const publicKeyFilename = filename;
-                const privateKeyFilename = filename.split(".")[0];
-                const privateKeyPath = sshdir + "/" + privateKeyFilename;
-                const publicKeyPath = sshdir + "/" + publicKeyFilename;
-                keyData[publicKeyFilename] = {
-                    privateKeyFilename,
-                    publicKeyFilename,
-                    privateKeyPath,
-                    publicKeyPath,
-                    privateKeyData: readFileSync(privateKeyPath, 'utf-8'),
-                    publicKeyData: readFileSync(publicKeyPath, 'utf-8'),
-                };
-            }
-        })
-        mainWindow.webContents.send("received:keys", true);
-    });
 });
 
 ipcMain.on("request:cli_command", (_, {cliArgs}) => {

@@ -22,13 +22,6 @@ const waitFor = async ({
     });
 }
 
-const getKeys = () => {
-    ipcRenderer.send("request:keys");
-    ipcRenderer.receive("received:keys", () => {
-        initialFetchedKeys = true;
-    });
-};
-
 // the only purpose of this is to drain the queue with a subscriber, it does nothing else but log
 // to term
 (() => {
@@ -383,7 +376,6 @@ observer.observe(document.getElementById("app"), {
 });
 
 // MAIN LOOP
-getKeys();
 showLoadingIndicator();
 (async () => {
     await waitFor({
