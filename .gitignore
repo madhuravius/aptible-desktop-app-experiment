@@ -11,6 +11,7 @@
 !public/xterm-addon-fit.min.js
 !cli
 !cli/**/*
+public/cli
 !electron
 !electron/**/*
 !refresh.sh

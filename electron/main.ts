@@ -1,18 +1,20 @@
 import {app, BrowserWindow, ipcMain, Menu, nativeImage, Tray} from "electron";
-import {exec} from "child_process";
+import {exec, spawn} from "child_process";
 import remoteMain from '@electron/remote/main';
 import path from "path";
 import {readFileSync} from "fs";
-// require("../public/wasm_exec");
 
 // global garb to prevent gcing and losing
-// const go = new Go();
-let wasmBin = process.env.VITE_DEV_SERVER_URL ? readFileSync('dist/cli.wasm') : path.join(__dirname, "../cli.wasm");
 let mainWindow;
 let tray; // must be specified globally or will be gc
 let trayIconPath;
 let iconPath;
 // end of global garb
+
+// bad code in need of a better store
+let messagesToSendToFrontend = [];
+const cliBinaryPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/cli") : path.join(__dirname, "../cli")
+// end bad code
 
 let isQuitting = false;
 
@@ -151,4 +153,46 @@ ipcMain.on("request:keys", (_) => {
         mainWindow.webContents.send("received:keys", true);
     });
 });
+
+ipcMain.on("request:cli_command", (_, {cliArgs}) => {
+    const commandRequiresSshKeys = ["logs", "operation:follow", "ssh"].map((possibleCommand) => {
+        return cliArgs.includes(possibleCommand)
+    }).some((found) => found);
+
+    if (commandRequiresSshKeys) {
+        const [_key, {publicKeyData, privateKeyData}] = Object.entries(keyData)?.[0];
+        ["--public-key", publicKeyData, "--private-key", privateKeyData]
+            .forEach((flagValue) => {
+                cliArgs.splice(cliArgs.length - 2, 0, flagValue)
+            });
+    }
+
+    const activeProcess = spawn(cliBinaryPath, cliArgs);
+    activeProcess.stdout.setEncoding('utf-8');
+    activeProcess.stdout.on('data', (data) => messagesToSendToFrontend.push(data));
+    activeProcess.stderr.setEncoding('utf-8');
+    activeProcess.stderr.on('data', (data) => messagesToSendToFrontend.push(data));
+    activeProcess.on('close', (data) => {
+        // messagesToSendToFrontend.push(data)
+        mainWindow.webContents.send("received:cli_command", { status: 'success' })
+    });
+})
+
+// drain the message queue to frontend
+setInterval(() => {
+    if (messagesToSendToFrontend.length > 0 && mainWindow.webContents) {
+        mainWindow.webContents.send("received:term_messages", messagesToSendToFrontend.at(0))
+        messagesToSendToFrontend.shift()
+    }
+}, 50);
+/*
+* const possibleKeysInHomeDirectory = Object.entries(keys)?.[0];
+if (possibleKeysInHomeDirectory) {
+    const [_, {publicKeyData, privateKeyData}] = possibleKeysInHomeDirectory;
+    ["--public-key", publicKeyData, "--private-key", privateKeyData]
+        .forEach((flagValue) => {
+            cliArgs.splice(cliArgs.length - 2, 0, flagValue)
+        });
+}
+* */
 

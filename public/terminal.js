@@ -1,5 +1,3 @@
-const go = new Go();
-let bin;
 let initialFetchedKeys = false;
 let keys; // should be dropped from global state
 let term;
@@ -18,7 +16,7 @@ console.log = (params) => {
     }
 }
 
-const waitForTruth = async ({
+const waitFor = async ({
                                 func, interval = 25, callback = () => {
     }
                             }) => {
@@ -36,25 +34,19 @@ const waitForTruth = async ({
 }
 
 const getKeys = () => {
-    // TODO - this needs to be rewritten with a locker and some checkin awaitable checkout in the CLI flow itself
     ipcRenderer.send("request:keys");
     ipcRenderer.receive("received:keys", () => {
         initialFetchedKeys = true;
     });
 };
 
-const runAptibleCLI = async () => {
-    showLoadingIndicator();
-    const obj = await WebAssembly.instantiate(bin, go.importObject); // reset instance
-    await go.run(obj.instance)
-    // this must be done because go spawns work that immediately returns a promise in wasm
-    // if any async background workers are present (web), we must wait until they are ALL
-    // complete. this is not documented very well and is probably subject to change
-    await waitForTruth({
-        callback: hideLoadingIndicator,
-        func: () => go.exited === true,
+// the only purpose of this is to drain the queue with a subscriber, it does nothing else but log
+// to term
+(() => {
+    ipcRenderer.receive("received:term_messages", (event) => {
+        console.log(event.toString())
     })
-}
+})()
 
 const createTerminal = () => {
     const term = new Terminal({
@@ -69,32 +61,44 @@ const createTerminal = () => {
     return {fitAddon, term};
 }
 
+
+const userPromptText = () => {
+    const date = new Date();
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2)
+    const seconds = ('0' + date.getSeconds()).slice(-2)
+    return `\x1b[1;31m${hours}:${minutes}:${seconds}\x1b[37m > aptible `
+}
+const newLine = () => term.write("\r\n")
+const userPrompt = () => term.write(userPromptText())
+
 const runCommandInTerminal = async (command, term) => {
     const splitCommand = command.split(" ");
     const {token: {accessToken}, env: {apiUrl}} = window.reduxStore.getState();
-    const cliArgs = ["", "--token", accessToken, "--api-host", apiUrl, ...splitCommand];
-    const commandRequiresSshKeys = ["logs", "operation:follow", "ssh"].map((possibleCommand) => {
-        return splitCommand.includes(possibleCommand)
-    }).some((found) => found);
+    const cliArgs = ["--token", accessToken, "--api-host", apiUrl, ...splitCommand];
 
-    if (commandRequiresSshKeys) {
-        // This must be done on the nodeJs side, this cannot execute fully client side
-        const possibleKeysInHomeDirectory = Object.entries(keys)?.[0];
-        if (possibleKeysInHomeDirectory) {
-            const [_, {publicKeyData, privateKeyData}] = possibleKeysInHomeDirectory;
-            ["--public-key", publicKeyData, "--private-key", privateKeyData]
-                .forEach((flagValue) => {
-                    cliArgs.splice(cliArgs.length - 2, 0, flagValue)
-                });
-        }
-    } else {
-        go.argv = cliArgs;
-        return await runAptibleCLI()
-    }
+    showLoadingIndicator();
+    // This must be done on the nodeJs side, this cannot execute fully client side
+    ipcRenderer.send("request:cli_command", ({cliArgs}));
+    let completedRemoteTask = false;
+    ipcRenderer.receive("received:cli_command", ({ status }) => {
+        consoleLog("Completed remote command with status: ", status)
+        completedRemoteTask = true;
+    })
+    await waitFor({
+        callback: () => {
+            hideLoadingIndicator();
+            setTimeout(() => {
+                newLine();
+                userPrompt();
+            }, 250); // if this is done too fast, things end badly
+        },
+        func: () => completedRemoteTask
+    })
 }
 
 const waitForReduxStore = async () => {
-    await waitForTruth(
+    await waitFor(
         {
             func: () => !!window.reduxStore?.getState,
             callback: () => {
@@ -114,16 +118,6 @@ const startTerminal = async () => {
     let lastPositionInHistory = 0;
     const entries = [];
 
-    const userPromptText = () => {
-        const date = new Date();
-        const hours = ('0' + date.getHours()).slice(-2);
-        const minutes = ('0' + date.getMinutes()).slice(-2)
-        const seconds = ('0' + date.getSeconds()).slice(-2)
-        return `\x1b[1;31m${hours}:${minutes}:${seconds}\x1b[37m > aptible `
-    }
-    const newLine = () => term.write("\r\n")
-    const userPrompt = () => term.write(userPromptText())
-
     term.open(terminalElement);
     window.addEventListener("resize", () => fitAddon.fit());
 
@@ -133,12 +127,9 @@ const startTerminal = async () => {
 
     setTimeout(async () => {
         await runCommandInTerminal("about", term);
-        newLine();
-        userPrompt();
     }, 350)
 
     term.clear();
-
     // todo - https://github.com/EDDYMENS/interactive-terminal/blob/main/frontend.js#L21
     // main loop
     term.onKey(async (char, ev) => {
@@ -191,7 +182,6 @@ const startTerminal = async () => {
             newLine();
             entries.push(currLine.trim());
             await runCommandInTerminal(currLine.trim(), term)
-            userPrompt();
             currLine = "";
             lastPositionInHistory = entries.length - 1;
         } else if (key === '\u007F') { // hitting delete
@@ -286,19 +276,12 @@ document.addEventListener('keydown', (event) => {
 });
 
 // MAIN LOOP
-console.log("Loading WASM binary for use")
 getKeys();
 showLoadingIndicator();
-fetch('cli.wasm')
-    .then(response => response.arrayBuffer()).then((binData) => {
-    bin = binData;
-    console.log("Loaded WASM bin, starting terminal")
-}).catch((err) => {
-    console.error(err);
-}).finally(async () => {
-    await waitForTruth({
+(async () => {
+    await waitFor({
         func: () => initialFetchedKeys === true,
     });
     startTerminal();
     hideLoadingIndicator();
-});
+})();

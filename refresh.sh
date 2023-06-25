@@ -26,7 +26,7 @@ rm -rf tmp
 
 echo "Setting up dependencies"
 yarn
-yarn add vite-plugin-electron
+yarn add vite-plugin-electron crypto text-encoding-polyfill
 yarn add -D electron-builder electron "@electron/remote"@latest
 
 # electron does not support browser router, so we'll need to switch to memory router for that
