@@ -319,6 +319,55 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+// only select those with child of > svg > title with "Copy Icon"
+const openTerminalAndRunCommand = async (command) => {
+    showTerminal()
+    if (!termActivity) {
+        term.write(command);
+        newLine();
+        await runCommandInTerminal(command);
+    }
+}
+
+// derived  from: https://stackoverflow.com/a/65708136
+const traverseParents = (element, level = 1) => {
+    while (level-- > 0) {
+        element = element.parentNode;
+        if (!element) return null;
+    }
+    return element;
+}
+
+const callback = (_) => {
+    const possibleClipboards = document.querySelectorAll('div[title^=\'aptible \']:not(.mutated-for-desktop-app)')
+    possibleClipboards.forEach((possibleClipboard) => {
+        if (possibleClipboard.querySelector("title")?.textContent === "Copy Icon") {
+            const runInCodeElement = document.createElement('div');
+            let desiredCommandInTerminal = possibleClipboard.getAttribute("title").replace("aptible ", "").trim()
+            // if it's an operation and ongoing, change it to follow
+            if (desiredCommandInTerminal.includes("operation:logs") &&
+                !Array.from(traverseParents(possibleClipboard, 3).querySelectorAll('div')).find((el) => el.textContent.includes("DONE"))) {
+                desiredCommandInTerminal = desiredCommandInTerminal.replace("operation:logs", "operation:follow")
+            }
+
+            runInCodeElement.innerHTML = `<div class="ml-2" onclick="openTerminalAndRunCommand('${desiredCommandInTerminal}')">
+    <svg viewBox="0 0 24 24" width="16" height="16" stroke="#888C90" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cursor-pointer">
+        <title>Run in terminal</title>
+        <polyline points="4 17 10 11 4 5"/>
+        <line x1="12" y1="19" x2="20" y2="19"/>
+    </svg>
+</div>`
+            possibleClipboard.classList.add("mutated-for-desktop-app")
+            possibleClipboard.parentElement.append(runInCodeElement)
+        }
+    })
+}
+const observer = new MutationObserver(callback);
+observer.observe(document.getElementById("app"), {
+    childList: true,
+    subtree: true,
+});
+
 // MAIN LOOP
 getKeys();
 showLoadingIndicator();

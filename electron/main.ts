@@ -31,7 +31,6 @@ app.on("before-quit", function () {
 // needed for remote module execution (preload.ts)
 remoteMain.initialize();
 app.whenReady().then(() => {
-
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
 
     const splash = new BrowserWindow({
