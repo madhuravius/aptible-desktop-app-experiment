@@ -2,15 +2,13 @@ package internal
 
 import (
 	"errors"
+	"github.com/aptible/go-deploy/aptible"
 
 	"github.com/urfave/cli/v2"
 )
 
-type Resource struct {
-	ID int64
-}
-
 func (c *Config) Logs(ctx *cli.Context) error {
+	var err error
 	appId := ctx.Value("app").(int64)
 	dbId := ctx.Value("database").(int64)
 	environmentId := ctx.Value("environment").(int64)
@@ -21,13 +19,13 @@ func (c *Config) Logs(ctx *cli.Context) error {
 
 	if environmentId != 0 {
 		// doesn't get used unless flag is passed in
-		_, err := c.client.GetEnvironment(environmentId)
+		_, err = c.client.GetEnvironment(environmentId)
 		if err != nil {
 			return err
 		}
 	}
 
-	r := Resource{}
+	var op aptible.Operation
 	if appId != 0 {
 		app, err := c.client.GetApp(appId)
 		if err != nil {
@@ -36,7 +34,10 @@ func (c *Config) Logs(ctx *cli.Context) error {
 		if environmentId != 0 && app.EnvironmentID != environmentId {
 			return errors.New("error - app's environment and environment param do not match")
 		}
-		r.ID = app.ID
+		op, err = c.client.CreateAppLogsOperation(appId)
+		if err != nil {
+			return err
+		}
 	}
 
 	if dbId != 0 {
@@ -47,7 +48,15 @@ func (c *Config) Logs(ctx *cli.Context) error {
 		if environmentId != 0 && db.EnvironmentID != environmentId {
 			return errors.New("error - app's environment and environment param do not match")
 		}
-		r.ID = db.ID
+		op, err = c.client.CreateDatabaseLogsOperation(dbId)
+		if err != nil {
+			return err
+		}
 	}
+
+	if err = c.attachToOperationLogs(op); err != nil {
+		return err
+	}
+
 	return nil
 }

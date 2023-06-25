@@ -1,6 +1,7 @@
 let initialFetchedKeys = false;
 let keys; // should be dropped from global state
 let term;
+let termActivity = false;
 let fitAddon;
 
 const terminalElement = document.getElementById("terminal")
@@ -45,6 +46,8 @@ const getKeys = () => {
 (() => {
     ipcRenderer.receive("received:term_messages", (event) => {
         console.log(event.toString())
+
+        reconcileLoadingIndicatorWithScroll();
     })
 })()
 
@@ -52,7 +55,7 @@ const createTerminal = () => {
     const term = new Terminal({
         convertEol: true,
         cursorBlink: "block",
-        fontSize: 12
+        fontSize: 12,
     });
 
     fitAddon = new FitAddon.FitAddon();
@@ -72,11 +75,12 @@ const userPromptText = () => {
 const newLine = () => term.write("\r\n")
 const userPrompt = () => term.write(userPromptText())
 
-const runCommandInTerminal = async (command, term) => {
+const runCommandInTerminal = async (command) => {
     const splitCommand = command.split(" ");
     const {token: {accessToken}, env: {apiUrl}} = window.reduxStore.getState();
     const cliArgs = ["--token", accessToken, "--api-host", apiUrl, ...splitCommand];
 
+    termActivity = true;
     showLoadingIndicator();
     // This must be done on the nodeJs side, this cannot execute fully client side
     ipcRenderer.send("request:cli_command", ({cliArgs}));
@@ -95,6 +99,25 @@ const runCommandInTerminal = async (command, term) => {
         },
         func: () => completedRemoteTask
     })
+    termActivity = false;
+}
+
+const sendInterruptToTerminal = async () => {
+    termActivity = true;
+    showLoadingIndicator();
+    // This must be done on the nodeJs side, this cannot execute fully client side
+    ipcRenderer.send("request:cli_sigint");
+    let completedRemoteTask = false;
+    ipcRenderer.receive("received:cli_sigint", () => {
+        completedRemoteTask = true;
+    })
+    await waitFor({
+        callback: () => {
+            hideLoadingIndicator();
+        },
+        func: () => completedRemoteTask
+    })
+    termActivity = false;
 }
 
 const waitForReduxStore = async () => {
@@ -126,18 +149,31 @@ const startTerminal = async () => {
     await waitForReduxStore();
 
     setTimeout(async () => {
-        await runCommandInTerminal("about", term);
+        await runCommandInTerminal("about");
     }, 350)
 
     term.clear();
     // todo - https://github.com/EDDYMENS/interactive-terminal/blob/main/frontend.js#L21
     // main loop
     term.onKey(async (char, ev) => {
+        reconcileLoadingIndicatorWithScroll();
+
         const {key} = char;
-        if (["\x1B[D", "\x1B[C"].includes(key)) { // ignore left/right arrows for now
-            return
+        // overrides: interrupts and anything that ignores something has been sent to the terminal
+         if (key === "\u0003") { // ctrl + c
+            await sendInterruptToTerminal();
+            term.write('^C');
+            newLine();
+            userPrompt();
+            currLine = "";
         }
 
+        // do not allow other actions while an activity is ongoing
+        if (termActivity) return
+        // ignore left/right arrows for now
+        if (["\x1B[D", "\x1B[C"].includes(key)) return
+
+        // normal flows
         if (key === "\u0004") {
             term.write('^D');
             newLine();
@@ -173,15 +209,10 @@ const startTerminal = async () => {
             newLine();
             userPrompt();
             currLine = "";
-        } else if (key === "\u0003") { // ctrl + c
-            term.write('^C');
-            newLine();
-            userPrompt();
-            currLine = "";
         } else if (key === '\r') { // hitting enter
             newLine();
             entries.push(currLine.trim());
-            await runCommandInTerminal(currLine.trim(), term)
+            await runCommandInTerminal(currLine.trim())
             currLine = "";
             lastPositionInHistory = entries.length - 1;
         } else if (key === '\u007F') { // hitting delete
@@ -223,6 +254,23 @@ const showLoadingIndicator = () => {
 
 const hideLoadingIndicator = () => {
     loadingIndicator.classList.add("hidden");
+}
+
+const shiftLoadingIndicatorForScroll = () => {
+    loadingIndicator.classList.add("mr-8");
+}
+
+const unshiftLoadingIndicatorForScroll = () => {
+    loadingIndicator.classList.remove("mr-8");
+}
+
+const reconcileLoadingIndicatorWithScroll = () => {
+    // if scroll height exceeds a certain value, adjust margin of loader
+    if (term._core.viewport._activeBuffer.lines.length > term._core.viewport._activeBuffer._rows) {
+        shiftLoadingIndicatorForScroll()
+    } else {
+        unshiftLoadingIndicatorForScroll()
+    }
 }
 
 const hideTerminal = () => {

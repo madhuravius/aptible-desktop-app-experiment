@@ -45,7 +45,7 @@ func (c *Config) AptibleSSH(publicKey []byte, privateKey []byte, certString, hos
 	if err != nil {
 		return err
 	}
-	//defer os.RemoveAll(tmp)
+	defer os.RemoveAll(tmp)
 
 	knownHostsPath := fmt.Sprintf("%s/known_hosts", tmp)
 	if err = os.WriteFile(fmt.Sprintf("%s/id_rsa", tmp), privateKey, 0600); err != nil {
@@ -63,8 +63,6 @@ func (c *Config) AptibleSSH(publicKey []byte, privateKey []byte, certString, hos
 	if err = os.Setenv("ACCESS_TOKEN", token); err != nil {
 		return err
 	}
-
-	fmt.Println(tmp)
 
 	cmd := exec.Command(
 		c.sshPath, fmt.Sprintf("%s@%s", user, host),

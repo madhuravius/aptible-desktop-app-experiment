@@ -10,6 +10,7 @@ let tray; // must be specified globally or will be gc
 // end of global garb
 
 // bad code in need of a better store
+let activeProcess = null;
 let messagesToSendToFrontend = [];
 // end bad code
 
@@ -156,7 +157,10 @@ ipcMain.on("request:keys", (_) => {
 });
 
 ipcMain.on("request:cli_command", (_, {cliArgs}) => {
-    const activeProcess = spawn(
+    // do not allow more than one active process at a time
+    if (activeProcess) return;
+
+    activeProcess = spawn(
         cliBinaryPath,
         cliArgs,
         { env: { SSH_PATH: sshPath, SSH_KEYGEN_PATH: sshKeygenPath } }
@@ -166,7 +170,7 @@ ipcMain.on("request:cli_command", (_, {cliArgs}) => {
     activeProcess.stderr.setEncoding('utf-8');
     activeProcess.stderr.on('data', (data) => messagesToSendToFrontend.push(data));
     activeProcess.on('close', (data) => {
-        // messagesToSendToFrontend.push(data)
+        activeProcess = null;
         mainWindow.webContents.send("received:cli_command", { status: 'success' })
     });
 })
@@ -178,14 +182,16 @@ setInterval(() => {
         messagesToSendToFrontend.shift()
     }
 }, 50);
-/*
-* const possibleKeysInHomeDirectory = Object.entries(keys)?.[0];
-if (possibleKeysInHomeDirectory) {
-    const [_, {publicKeyData, privateKeyData}] = possibleKeysInHomeDirectory;
-    ["--public-key", publicKeyData, "--private-key", privateKeyData]
-        .forEach((flagValue) => {
-            cliArgs.splice(cliArgs.length - 2, 0, flagValue)
-        });
-}
-* */
 
+ipcMain.on("request:cli_sigint", () => {
+    if (!activeProcess) {
+        mainWindow.webContents.send("received:cli_sigint")
+        return
+    }
+
+    activeProcess.on("exit", () => {
+        mainWindow.webContents.send("received:cli_sigint")
+        activeProcess = null;
+    })
+    activeProcess.kill("SIGINT")
+})
