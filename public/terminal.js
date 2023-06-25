@@ -6,17 +6,6 @@ let fitAddon;
 
 const terminalElement = document.getElementById("terminal")
 
-// hijack console.log for terminal.js specific things
-const consoleLog = console.log;
-console.log = (params) => {
-    let fromSelf = new Error().stack.split("\n")?.[1].includes("terminal.js")
-    if (fromSelf && term) {
-        params.split("\n").forEach((line) => term.write(`${line}\n\r`))
-    } else {
-        consoleLog(params);
-    }
-}
-
 const waitFor = async ({
                                 func, interval = 25, callback = () => {
     }
@@ -45,7 +34,9 @@ const getKeys = () => {
 // to term
 (() => {
     ipcRenderer.receive("received:term_messages", (event) => {
-        console.log(event.toString())
+        if (term) {
+            event.toString().split("\n").forEach((line) => term.write(`${line}\n\r`))
+        }
 
         reconcileLoadingIndicatorWithScroll();
     })
@@ -86,7 +77,6 @@ const runCommandInTerminal = async (command) => {
     ipcRenderer.send("request:cli_command", ({cliArgs}));
     let completedRemoteTask = false;
     ipcRenderer.receive("received:cli_command", ({ status }) => {
-        consoleLog("Completed remote command with status: ", status)
         completedRemoteTask = true;
     })
     await waitFor({
@@ -257,25 +247,29 @@ const hideLoadingIndicator = () => {
 }
 
 const shiftLoadingIndicatorForScroll = () => {
-    loadingIndicator.classList.add("mr-8");
+    loadingIndicator.classList.add("mr-2");
 }
 
 const unshiftLoadingIndicatorForScroll = () => {
-    loadingIndicator.classList.remove("mr-8");
+    loadingIndicator.classList.remove("mr-2");
 }
 
 const reconcileLoadingIndicatorWithScroll = () => {
     // if scroll height exceeds a certain value, adjust margin of loader
-    if (term._core.viewport._activeBuffer.lines.length > term._core.viewport._activeBuffer._rows) {
-        shiftLoadingIndicatorForScroll()
-    } else {
-        unshiftLoadingIndicatorForScroll()
+    if (!terminalElement.classList.contains("hidden")) {
+        if (term._core.viewport._activeBuffer.lines.length > term._core.viewport._activeBuffer._rows) {
+            shiftLoadingIndicatorForScroll()
+        } else {
+            unshiftLoadingIndicatorForScroll()
+        }
     }
 }
 
 const hideTerminal = () => {
     appContainer.classList.add("w-full");
     terminalElement.classList.add("hidden")
+    unshiftLoadingIndicatorForScroll()
+    loadingIndicator.classList.remove("overlaid");
     toggleTerminalButton.classList.remove("half-right")
     toggleTerminalButton.classList.add("right-0")
     toggleTerminalButton.innerHTML = `        <div class="flex">
@@ -290,6 +284,8 @@ const showTerminal = () => {
     appContainer.classList.remove("w-full")
     appContainer.classList.add("w-1/2");
     terminalElement.classList.remove("hidden")
+    reconcileLoadingIndicatorWithScroll()
+    loadingIndicator.classList.add("overlaid");
     toggleTerminalButton.classList.remove("right-0")
     toggleTerminalButton.classList.add("half-right")
     toggleTerminalButton.innerHTML = `<div class="flex">
