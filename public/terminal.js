@@ -160,8 +160,8 @@ const startTerminal = async () => {
 
         // do not allow other actions while an activity is ongoing
         if (termActivity) return
-        // ignore left/right arrows for now
-        if (["\x1B[D", "\x1B[C"].includes(key)) return
+        // ignore left/right arrows for now and jump words (option-left, option-right on mac) too
+        if (["\x1B[D", "\x1B[C", "\x1Bb", "\x1Bf"].includes(key)) return
 
         // normal flows
         if (key === "\u0004") {
@@ -339,6 +339,7 @@ const traverseParents = (element, level = 1) => {
 }
 
 const callback = (_) => {
+    // clipboards
     const possibleClipboards = document.querySelectorAll('div[title^=\'aptible \']:not(.mutated-for-desktop-app)')
     possibleClipboards.forEach((possibleClipboard) => {
         if (possibleClipboard.querySelector("title")?.textContent === "Copy Icon") {

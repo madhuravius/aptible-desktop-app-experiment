@@ -1,4 +1,4 @@
-import {app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, Tray} from "electron";
+import {app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, shell, Tray} from "electron";
 import {exec, spawn} from "child_process";
 import remoteMain from '@electron/remote/main';
 import path from "path";
@@ -91,6 +91,16 @@ app.whenReady().then(() => {
                 mainWindow.hide();
             }
             return false;
+        });
+
+        // taken from: https://stackoverflow.com/a/32415579
+        // when external links, send them to browser
+        mainWindow.webContents.on('will-navigate', async function (e, url) {
+            console.log(e, url)
+            if (url != mainWindow.webContents.getURL()) {
+                e.preventDefault()
+                await shell.openExternal(url)
+            }
         });
 
         tray.setContextMenu(
