@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/aptible/go-deploy v1.4.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
 
 require (

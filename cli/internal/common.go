@@ -101,7 +101,7 @@ func (c *Config) getDatabasesFromFlags(ctx *cli.Context) ([]aptible.Database, er
 
 	// if there is an error, we will skip it as we defer to whatever list is provided instead
 	var dbs []aptible.Database
-	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err != nil {
+	if dbId, err := strconv.ParseInt(rawDbIdOrHandle, 10, 64); err == nil {
 		db, err := c.client.GetDatabase(dbId)
 		if err != nil {
 			return nil, err
@@ -118,9 +118,7 @@ func (c *Config) getDatabasesFromFlags(ctx *cli.Context) ([]aptible.Database, er
 			if dbsErr != nil {
 				return nil, fmt.Errorf("could not query databases to collect for environment: %s", err.Error())
 			}
-			for _, db := range dbResults {
-				dbs = append(dbs, db)
-			}
+			dbs = append(dbs, dbResults...)
 		}
 	}
 
