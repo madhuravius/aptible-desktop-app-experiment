@@ -5,6 +5,7 @@ import path from "path";
 import {readFileSync} from "fs";
 
 // global garb to prevent gcing and losing
+let cliBinaryPath;
 let mainWindow;
 let tray; // must be specified globally or will be gc
 let trayIconPath;
@@ -13,7 +14,6 @@ let iconPath;
 
 // bad code in need of a better store
 let messagesToSendToFrontend = [];
-const cliBinaryPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/cli") : path.join(__dirname, "../cli")
 // end bad code
 
 let isQuitting = false;
@@ -28,6 +28,7 @@ app.on("before-quit", function () {
 // needed for remote module execution (preload.ts)
 remoteMain.initialize();
 app.whenReady().then(() => {
+    cliBinaryPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../public/cli") : path.join(__dirname, "../../app.asar.unpacked/cli");
     iconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/icon.png") : path.join(__dirname, "../icon.png");
     trayIconPath = process.env.VITE_DEV_SERVER_URL ? path.join(__dirname, "../build/tray-icon.png") : path.join(__dirname, "../tray-icon.png");
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
@@ -155,18 +156,6 @@ ipcMain.on("request:keys", (_) => {
 });
 
 ipcMain.on("request:cli_command", (_, {cliArgs}) => {
-    const commandRequiresSshKeys = ["logs", "operation:follow", "ssh"].map((possibleCommand) => {
-        return cliArgs.includes(possibleCommand)
-    }).some((found) => found);
-
-    if (commandRequiresSshKeys) {
-        const [_key, {publicKeyData, privateKeyData}] = Object.entries(keyData)?.[0];
-        ["--public-key", publicKeyData, "--private-key", privateKeyData]
-            .forEach((flagValue) => {
-                cliArgs.splice(cliArgs.length - 2, 0, flagValue)
-            });
-    }
-
     const activeProcess = spawn(cliBinaryPath, cliArgs);
     activeProcess.stdout.setEncoding('utf-8');
     activeProcess.stdout.on('data', (data) => messagesToSendToFrontend.push(data));

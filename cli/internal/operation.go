@@ -9,16 +9,6 @@ import (
 )
 
 func (c *Config) OperationFollow(ctx *cli.Context) error {
-	publicKey := ctx.Value("public-key").(string)
-	privateKey := ctx.Value("private-key").(string)
-	// TODO - add mount values for pub/private key too, this is hack
-
-	if publicKey == "" {
-		return errors.New("missing ssh public key to continue")
-	}
-	if privateKey == "" {
-		return errors.New("missing ssh private key to continue")
-	}
 
 	// setup SSH and ensure access
 	if len(ctx.Args().Slice()) == 0 {
@@ -47,6 +37,11 @@ func (c *Config) OperationFollow(ctx *cli.Context) error {
 		return nil
 	}
 
+	publicKey, privateKey, err := generatePublicPrivateKey()
+	if err != nil {
+		return err
+	}
+
 	environment, err := c.client.GetEnvironment(op.EnvironmentID)
 	if err != nil {
 		return err
@@ -58,16 +53,16 @@ func (c *Config) OperationFollow(ctx *cli.Context) error {
 	}
 
 	// create SSH Portal connection operation
-	sshPortalOp, err := c.client.CreateSSHPortalConnectionOperation(op.EnvironmentID, opId, publicKey)
-	if err != nil {
-		return err
-	}
-
-	err = AptibleSSH(sshPortalOp.Certificate, stack.PortalHost, stack.HostKey, privateKey, sshPortalOp.SSHUser, op.SSHPort)
+	sshPortalOp, err := c.client.CreateSSHPortalConnectionOperation(op.EnvironmentID, opId, string(publicKey))
 	if err != nil {
 		return err
 	}
 
 	fmt.Print(Green(fmt.Sprintf("Streaming logs for running %s #%d on %s...\n", op.Type, op.ID, op.Handle)))
+	err = AptibleSSH(privateKey, sshPortalOp.Certificate, stack.PortalHost, stack.HostKey, sshPortalOp.SSHUser, c.token, stack.PortalPort)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

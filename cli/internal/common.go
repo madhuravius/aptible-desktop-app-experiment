@@ -1,8 +1,11 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"os"
+	"time"
 
 	"github.com/aptible/go-deploy/aptible"
 	"github.com/urfave/cli/v2"
@@ -20,23 +23,27 @@ var (
 )
 
 type Config struct {
-	client *aptible.Client
+	client  *aptible.Client
+	token   string
+	apiHost string
 }
 
 func NewConfig(ctx *cli.Context) (*Config, error) {
-	client, err := Client(ctx)
+	token := ctx.Value("token").(string)
+	apiHost := ctx.Value("api-host").(string)
+
+	client, err := Client(token, apiHost)
 	if err != nil {
 		return nil, err
 	}
 	return &Config{
-		client: client,
+		client:  client,
+		token:   token,
+		apiHost: apiHost,
 	}, nil
 }
 
-func Client(ctx *cli.Context) (*aptible.Client, error) {
-	token := ctx.Value("token").(string)
-	apiHost := ctx.Value("api-host").(string)
-
+func Client(token, apiHost string) (*aptible.Client, error) {
 	// todo - find a way to bypass this, this is pretty bad
 	os.Setenv("APTIBLE_ACCESS_TOKEN", token)
 	os.Setenv("APTIBLE_API_ROOT_URL", apiHost)
@@ -75,4 +82,19 @@ func Color(colorString string) func(...interface{}) string {
 			fmt.Sprint(args...))
 	}
 	return sprint
+}
+
+func CheckHostPortAccessible(host, port string) error {
+	// check if host is available / port open
+	checkConn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 1*time.Second)
+	if err != nil {
+		return err
+	}
+	if checkConn != nil {
+		_ = checkConn.Close()
+	} else {
+		return errors.New("error - unable to connect to remote host")
+	}
+
+	return nil
 }

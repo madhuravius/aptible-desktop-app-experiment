@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"os"
+	"os/exec"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -26,11 +28,40 @@ func trustedHostKeyCallback(trustedKey string) ssh.HostKeyCallback {
 	}
 }
 
-func AptibleSSH(certString, host, hostKey, privateKeyString, user string, port int64) error {
+func generatePublicPrivateKey() ([]byte, []byte, error) {
+	tmp, err := os.MkdirTemp("", "sshkeygen-data")
+	if err != nil {
+		return nil, nil, err
+	}
+	defer os.RemoveAll(tmp)
+
+	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-N", "", "-f", fmt.Sprintf("%s/id_rsa", tmp))
+	_, err = cmd.Output()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privateKey, err := os.ReadFile(fmt.Sprintf("%s/id_rsa", tmp))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	publicKey, err := os.ReadFile(fmt.Sprintf("%s/id_rsa.pub", tmp))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return publicKey, privateKey, nil
+}
+
+func AptibleSSH(privateKey []byte, certString, host, hostKey, user, token string, port int64) error {
 	var err error
 
-	privateKeyBytes := []byte(privateKeyString)
-	signer, err := ssh.ParsePrivateKey(privateKeyBytes)
+	if err = CheckHostPortAccessible(host, fmt.Sprintf("%d", port)); err != nil {
+		return err
+	}
+
+	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
 		return err
 	}
@@ -46,18 +77,15 @@ func AptibleSSH(certString, host, hostKey, privateKeyString, user string, port i
 		return err
 	}
 
-	fmt.Println(user, host, port, certSigner)
-
 	config := &ssh.ClientConfig{
 		User: user,
-		Auth: []ssh.AuthMethod{
-			// TODO - see: https://github.com/FiloSottile/yubikey-agent/blob/main/main.go#L263
-			ssh.PublicKeys(certSigner),
-		},
+		// TODO - see: https://github.com/FiloSottile/yubikey-agent/blob/main/main.go#L263
+		Auth:            []ssh.AuthMethod{ssh.PublicKeys(certSigner)},
 		HostKeyCallback: trustedHostKeyCallback(hostKey),
 		Timeout:         30 * time.Second,
 	}
 
+	// actually ssh in
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), config)
 	if err != nil {
 		return err
@@ -71,6 +99,11 @@ func AptibleSSH(certString, host, hostKey, privateKeyString, user string, port i
 	}
 	defer session.Close()
 
+	// set options for ssh connection on host
+	if err = session.Setenv("ACCESS_TOKEN", token); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -80,11 +113,4 @@ func AptibleSSH(certString, host, hostKey, privateKeyString, user string, port i
 		- operation logs (needs an existing operation to latch onto): https://github.com/aptible/aptible-cli/blob/2baa61e9ca55224d659d784fb4a8b14a3b7dbbb1/lib/aptible/cli/subcommands/operation.rb#L23
 		- regular logs (logs operation): https://github.com/aptible/aptible-cli/blob/2baa61e9ca55224d659d784fb4a8b14a3b7dbbb1/lib/aptible/cli/subcommands/logs.rb#L26C15-L26C15
 		- sshing to container (execute operation): https://github.com/aptible/aptible-cli/blob/2baa61e9ca55224d659d784fb4a8b14a3b7dbbb1/lib/aptible/cli/subcommands/ssh.rb#L52
-	3. check the default path of ~/home/.ssh or a preprovided path
-	4. check if files are present where we expect them to exist:
-		- ssh config file
-		- private key file (`id_rsa`` by default)
-		- public key file  (`id_rsa.pub` by default), or private key + .pub affix
-		- we need the ACCESS_TOKEN, which is also sent here: https://github.com/aptible/aptible-cli/blob/master/lib/aptible/cli/helpers/operation.rb#L32
-	5. once we have that, start the thing and pray
 */

@@ -79,7 +79,6 @@ func (c *Config) ListBackups(ctx *cli.Context) error {
 			if backup.Copy != nil {
 				fmt.Print(", copy")
 			}
-			fmt.Println("")
 		}
 	}
 
