@@ -148,7 +148,6 @@ const startTerminal = async () => {
         reconcileLoadingIndicatorWithScroll();
 
         const {key} = char;
-        console.log(key, char)
         // overrides: interrupts and anything that ignores something has been sent to the terminal
          if (key === "\u0003") { // ctrl + c
             await sendInterruptToTerminal();

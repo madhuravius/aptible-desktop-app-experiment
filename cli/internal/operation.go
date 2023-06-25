@@ -61,7 +61,7 @@ func GenOperationsCommands() []*cli.Command {
 			Usage: "This command displays logs for a given Operation.",
 			Action: func(ctx *cli.Context) error {
 				c := NewConfigF(ctx)
-				if err := c.OperationFollow(ctx); err != nil {
+				if err := c.OperationLogs(ctx); err != nil {
 					log.Fatal(err)
 				}
 				return nil
