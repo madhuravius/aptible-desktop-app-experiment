@@ -27,7 +27,7 @@ rm -rf tmp
 echo "Setting up dependencies"
 yarn
 yarn add vite-plugin-electron
-yarn add -D electron-builder electron
+yarn add -D electron-builder electron "@electron/remote"@latest
 
 # electron does not support browser router, so we'll need to switch to memory router for that
 # sed on mac does not allow overwriting in place easily, so just copy it to tmp and overwrite

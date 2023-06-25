@@ -1,29 +1,64 @@
 package internal
 
 import (
-	"os"
+	"encoding/base64"
+	"fmt"
+	"net"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
-func SetupSSHClient(user, password, host, publicKeyPath, privateKeyPath string) error {
-	privateKeyBytes, err := os.ReadFile(privateKeyPath)
-	if err != nil {
-		return err
+// keyString - from a given public key will check generated hosts value and verify: https://stackoverflow.com/a/63308243
+// child stanza just to generate the match
+func keyString(k ssh.PublicKey) string {
+	return k.Type() + " " + base64.StdEncoding.EncodeToString(k.Marshal()) // e.g. "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTY...."
+}
+
+// trustedHostKeyCallback - see above comment form keyStanza for attribution and how this is meant to actually work
+func trustedHostKeyCallback(trustedKey string) ssh.HostKeyCallback {
+	return func(_ string, _ net.Addr, k ssh.PublicKey) error {
+		ks := keyString(k)
+		if trustedKey != ks {
+			return fmt.Errorf("SSH-key verification: expected %q but got %q", trustedKey, ks)
+		}
+		return nil
 	}
+}
+
+func AptibleSSH(certString, host, hostKey, privateKeyString, user string, port int64) error {
+	var err error
+
+	privateKeyBytes := []byte(privateKeyString)
 	signer, err := ssh.ParsePrivateKey(privateKeyBytes)
 	if err != nil {
 		return err
 	}
 
+	certBytes := []byte(certString)
+	cert, _, _, _, err := ssh.ParseAuthorizedKey(certBytes)
+	if err != nil {
+		return err
+	}
+
+	certSigner, err := ssh.NewCertSigner(cert.(*ssh.Certificate), signer)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(user, host, port, certSigner)
+
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
+			// TODO - see: https://github.com/FiloSottile/yubikey-agent/blob/main/main.go#L263
+			ssh.PublicKeys(certSigner),
 		},
+		HostKeyCallback: trustedHostKeyCallback(hostKey),
+		Timeout:         30 * time.Second,
 	}
 
-	conn, err := ssh.Dial("tcp", host, config)
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), config)
 	if err != nil {
 		return err
 	}

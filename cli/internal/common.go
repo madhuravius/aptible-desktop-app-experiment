@@ -37,6 +37,7 @@ func Client(ctx *cli.Context) (*aptible.Client, error) {
 	token := ctx.Value("token").(string)
 	apiHost := ctx.Value("api-host").(string)
 
+	// todo - find a way to bypass this, this is pretty bad
 	os.Setenv("APTIBLE_ACCESS_TOKEN", token)
 	os.Setenv("APTIBLE_API_ROOT_URL", apiHost)
 

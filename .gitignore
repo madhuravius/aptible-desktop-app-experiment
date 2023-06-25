@@ -3,11 +3,12 @@
 !build
 !build/**/*
 !public
+!public/preload.js
+!public/terminal.js
+!public/wasm_exec.js
 !public/xterm.min.css
 !public/xterm.min.js
 !public/xterm-addon-fit.min.js
-!public/wasm_exec.js
-!public/terminal.js
 !cli
 !cli/**/*
 !electron
@@ -21,3 +22,5 @@
 !terminal.svg
 !install-cli.sh
 !electron-builder.yml
+!aptible-src
+!aptible-src/**/*

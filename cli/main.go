@@ -263,6 +263,14 @@ func main() {
 				Name:  "api-host",
 				Usage: "Specify a api-host you want your commands to run against",
 			},
+			&cli.StringFlag{
+				Name:  "public-key",
+				Usage: "Specify a public key to use for ssh-related processes (ex: operation:follow)",
+			},
+			&cli.StringFlag{
+				Name:  "private-key",
+				Usage: "Specify a private key to use for ssh-related processes (ex: operation:follow)",
+			},
 		},
 	}
 
